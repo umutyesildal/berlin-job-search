@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import csv
-import http.client
-import ipaddress
-import socket
 import datetime as dt
+import http.client
 import html
+import ipaddress
 import io
 import json
+import os
 import re
+import shutil
+import socket
+import subprocess
+import sys
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -18,6 +22,149 @@ from pathlib import Path
 from typing import Any, Optional
 
 USER_AGENT = "berlin-job-search-skill/0.1 (+https://github.com/umutyesildal/berlin-job-search)"
+
+_DATA_DIR_PROTECTION_CACHE: dict[str, dict[str, Any]] = {}
+_DATA_DIR_WARNINGS_PRINTED: set[str] = set()
+
+
+def default_data_dir() -> Path:
+    return Path(os.environ.get("GJS_DATA_DIR") or "./job-search")
+
+
+def protect_data_dir(path: Any) -> dict[str, Any]:
+    root = Path(path).expanduser().resolve()
+    cache_key = str(root)
+    if cache_key in _DATA_DIR_PROTECTION_CACHE:
+        return _DATA_DIR_PROTECTION_CACHE[cache_key]
+
+    root.mkdir(parents=True, exist_ok=True)
+    worktree = next(
+        (candidate for candidate in (root, *root.parents) if (candidate / ".git").exists()),
+        None,
+    )
+    if worktree is None:
+        result = {
+            "path": str(root),
+            "in_git_worktree": False,
+            "worktree": None,
+            "protected": True,
+            "gitignore_created": False,
+            "tracked_files": [],
+            "warnings": [],
+            "tracked_check": "not_needed",
+        }
+        _DATA_DIR_PROTECTION_CACHE[cache_key] = result
+        return result
+
+    warnings: list[str] = []
+    gitignore_created = False
+    protected = worktree != root
+    if worktree == root:
+        warnings.append(
+            "The data directory is the root of a Git repository; choose a subfolder or a folder outside the repository."
+        )
+    else:
+        gitignore = root / ".gitignore"
+        if not gitignore.exists():
+            try:
+                gitignore.write_text(
+                    "# Created by Berlin Job Search: personal job-search data, never commit it.\n*\n",
+                    encoding="utf-8",
+                )
+            except OSError as error:
+                protected = False
+                warnings.append("Could not create {}: {}".format(gitignore, error))
+            else:
+                gitignore_created = True
+        elif not gitignore.is_file():
+            protected = False
+            warnings.append("Add a line '*' to {} to protect this data directory.".format(gitignore))
+        else:
+            try:
+                lines = gitignore.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeError) as error:
+                protected = False
+                warnings.append("Could not read {}: {}".format(gitignore, error))
+            else:
+                if not any(line.strip() == "*" and not line.lstrip().startswith("#") for line in lines):
+                    protected = False
+                    warnings.append("Add a line '*' to {} to protect this data directory.".format(gitignore))
+
+    git = shutil.which("git")
+    tracked_files: list[str] = []
+    if git is None:
+        tracked_check = "skipped"
+    else:
+        try:
+            tracked_result = subprocess.run(
+                [git, "-C", str(root), "ls-files", "-z", "--", "."],
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            tracked_check = "unknown"
+            protected = False
+            warnings.append("Could not check tracked files in {}: {}".format(root, error))
+        else:
+            if tracked_result.returncode != 0:
+                tracked_check = "unknown"
+                protected = False
+                warnings.append("Could not check tracked files in {}; Git returned an error.".format(root))
+            else:
+                tracked_check = "done"
+                paths = [
+                    os.fsdecode(value)
+                    for value in tracked_result.stdout.split(b"\0")
+                    if value
+                ]
+                relative_root = root.relative_to(worktree).as_posix()
+                if relative_root != ".":
+                    prefix = relative_root.rstrip("/") + "/"
+                    paths = [
+                        value[len(prefix):] if value.startswith(prefix) else value
+                        for value in paths
+                    ]
+                if paths:
+                    protected = False
+                    warnings.append(
+                        "{} file(s) in {} are already tracked by Git; ignore rules don't protect them. "
+                        "To stop tracking without deleting your local copies: git rm --cached -r -- {} (then commit)."
+                        .format(len(paths), root, root)
+                    )
+                    tracked_files = paths[:20]
+
+    result = {
+        "path": str(root),
+        "in_git_worktree": True,
+        "worktree": str(worktree),
+        "protected": protected,
+        "gitignore_created": gitignore_created,
+        "tracked_files": tracked_files,
+        "warnings": warnings,
+        "tracked_check": tracked_check,
+    }
+    _DATA_DIR_PROTECTION_CACHE[cache_key] = result
+    return result
+
+
+def warn_data_dir_protection(result: dict[str, Any]) -> None:
+    for warning in result.get("warnings", []):
+        if warning not in _DATA_DIR_WARNINGS_PRINTED:
+            print("warning: {}".format(warning), file=sys.stderr)
+            _DATA_DIR_WARNINGS_PRINTED.add(warning)
+
+
+def protect_if_inside_data_dir(target: Any) -> Optional[dict[str, Any]]:
+    try:
+        data_root = default_data_dir().resolve()
+        output_path = Path(target).resolve()
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return None
+    if output_path == data_root or data_root in output_path.parents:
+        return protect_data_dir(default_data_dir())
+    return None
+
 
 CITY_ALIASES = {
     "munich": {
@@ -432,6 +579,10 @@ def markdown_table(
 
 
 def write_output(text: str, path: Optional[str] = None) -> None:
+    if path:
+        protection = protect_if_inside_data_dir(path)
+        if protection is not None:
+            warn_data_dir_protection(protection)
     print(text)
     if path:
         Path(path).write_text(text, encoding="utf-8")

@@ -43,7 +43,8 @@ Route each request to one workflow below and load only the reference files it na
 
 - Run scripts as `python3 "$SKILL_DIR/scripts/<script>.py"`, where `SKILL_DIR` is this file's
   folder. Every script has `--help`.
-- User data lives in `./job-search/` (or `$GJS_DATA_DIR`). Never write user data into `SKILL_DIR`.
+- User data lives in `./job-search/` (or `$GJS_DATA_DIR`), never in `SKILL_DIR`. Inside a Git repository, the scripts create a `.gitignore` containing `*` in that folder.
+- Before saving a CV, profile or other personal data for the first time, run `python3 scripts/tracker.py protect`. If `protected` is false or `tracked_files` is non-empty, stop, show the warnings and agree on a fix or a folder outside the repository before writing. Tell the user once that the folder is protected this way.
 
   | File | Holds |
   |---|---|

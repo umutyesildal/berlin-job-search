@@ -12,6 +12,8 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, Optional
 
+from _common import protect_if_inside_data_dir, warn_data_dir_protection
+
 
 INLINE_TOKEN = re.compile(
     r"\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*([^*]+)\*|(<br\s*/?>)",
@@ -408,6 +410,9 @@ def pdf_page_count(path: Path) -> int:
 
 
 def print_pdf(browser: str, html_path: Path, pdf_path: Path) -> tuple[bool, str]:
+    protection = protect_if_inside_data_dir(pdf_path)
+    if protection is not None:
+        warn_data_dir_protection(protection)
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
     before = pdf_path.stat().st_mtime_ns if pdf_path.exists() else None
     failures = []
@@ -450,6 +455,9 @@ def main(argv: Optional[list[str]] = None) -> int:
         style = args.style or ("lebenslauf" if args.lang == "de" else "modern")
         html_text = render_html(markdown, args.type, style, args.lang, args.photo)
         html_path = Path(args.out) if args.out else input_path.with_suffix(".html")
+        protection = protect_if_inside_data_dir(html_path)
+        if protection is not None:
+            warn_data_dir_protection(protection)
         html_path.parent.mkdir(parents=True, exist_ok=True)
         html_path.write_text(html_text, encoding="utf-8")
         print("HTML: {}".format(html_path))

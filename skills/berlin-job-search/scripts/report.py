@@ -11,7 +11,7 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, Optional
 
-from _common import escape_html
+from _common import default_data_dir, escape_html, protect_data_dir, warn_data_dir_protection
 from tracker import archive_folder, calculate_stats, events_path, followup_candidates, read_events, read_rows
 
 REPORT_TEMPLATE = Path(__file__).resolve().parent.parent / "assets" / "application-report.html"
@@ -307,9 +307,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--data-dir", help="Tracker data directory (default: GJS_DATA_DIR or ./job-search)")
     parser.add_argument("--out", help="HTML report path (default: DATA_DIR/report.html)")
     args = parser.parse_args(argv)
-    root = Path(args.data_dir or os.environ.get("GJS_DATA_DIR") or "./job-search")
+    root = Path(args.data_dir).expanduser().resolve() if args.data_dir else default_data_dir().expanduser().resolve()
     output_path = Path(args.out) if args.out else root / "report.html"
     try:
+        warn_data_dir_protection(protect_data_dir(root))
         rows = read_rows(root / "tracker.csv")
         events = read_events(events_path(root))
         output_path.parent.mkdir(parents=True, exist_ok=True)
