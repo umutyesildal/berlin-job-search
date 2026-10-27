@@ -25,10 +25,12 @@ from _common import (
     markdown_table,
     normalize_identity as normalized_key,
     plain,
+    protect_if_inside_data_dir,
     request_bytes,
     request_json,
     salary_text,
     source_date as iso_date,
+    warn_data_dir_protection,
     write_output,
 )
 from analyze_jd import analyze, employment_type_from_title
@@ -455,6 +457,9 @@ def mark_seen_jobs(
     for _, keys, first_seen in selected:
         for key in keys:
             entries.setdefault(key, first_seen)
+    protection = protect_if_inside_data_dir(path)
+    if protection is not None:
+        warn_data_dir_protection(protection)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json_text({"version": 1, "seen": entries}) + "\n", encoding="utf-8")
     return [job for job, _, _ in selected]

@@ -5,7 +5,6 @@ import csv
 import datetime as dt
 from decimal import Decimal, InvalidOperation
 import json
-import os
 import re
 import shutil
 import statistics
@@ -14,7 +13,19 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from _common import canonical_url, csv_text, json_text, markdown_table, parse_date_or_none, slugify, spreadsheet_cell
+from _common import (
+    canonical_url,
+    csv_text,
+    default_data_dir,
+    json_text,
+    markdown_table,
+    parse_date_or_none,
+    protect_data_dir,
+    protect_if_inside_data_dir,
+    slugify,
+    spreadsheet_cell,
+    warn_data_dir_protection,
+)
 
 FIELDS = [
     "id", "date_added", "company", "title", "url", "location", "source", "status",
@@ -50,7 +61,19 @@ OFFER_STATUSES = {"offer", "accepted"}
 
 
 def data_dir() -> Path:
-    return Path(os.environ.get("GJS_DATA_DIR") or "./job-search")
+    return default_data_dir()
+
+
+def _protect_tracker_data() -> dict[str, Any]:
+    result = protect_data_dir(data_dir())
+    warn_data_dir_protection(result)
+    return result
+
+
+def _protect_write_target(target: Path) -> None:
+    result = protect_if_inside_data_dir(target)
+    if result is not None:
+        warn_data_dir_protection(result)
 
 
 def tracker_path() -> Path:
@@ -85,6 +108,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 
 
 def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    _protect_write_target(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     text = csv_text([{**normalized_row(row), "_csv_encoding": "spreadsheet-v1"} for row in rows], FIELDS + ["_csv_encoding"])
     with path.open("w", newline="", encoding="utf-8") as stream:
@@ -189,6 +213,7 @@ def outcome_header(row: dict[str, Any]) -> str:
 
 
 def write_outcome(path: Path, row: dict[str, Any], events: list[dict[str, Any]]) -> None:
+    _protect_write_target(path)
     relevant = [event for event in events if str(event.get("id")) == str(row.get("id"))]
     relevant.sort(key=lambda event: (str(event.get("date") or ""), str(event.get("recorded_at") or "")))
     content = outcome_header(row)
@@ -198,6 +223,7 @@ def write_outcome(path: Path, row: dict[str, Any], events: list[dict[str, Any]])
 
 
 def append_outcome_event(path: Path, row: dict[str, Any], event: dict[str, Any]) -> None:
+    _protect_write_target(path)
     if not path.exists():
         write_outcome(path, row, [event])
         return
@@ -246,9 +272,11 @@ def record_event(
         except ValueError:
             row["followup_count"] = "1"
     row["last_event_date"] = date_value
+    _protect_write_target(path)
     write_rows(path, rows)
 
     event_file = events_path(path.parent)
+    _protect_write_target(event_file)
     event_file.parent.mkdir(parents=True, exist_ok=True)
     with event_file.open("a", encoding="utf-8") as stream:
         stream.write(json_text(event, indent=None) + "\n")
@@ -455,6 +483,7 @@ def command_add(args: argparse.Namespace) -> int:
             "company": args.company, "title": args.title, "url": args.url,
             "location": args.location, "source": args.source,
         }
+    _protect_tracker_data()
     identifier = add_job(tracker_path(), job, args.score or "", args.notes or "")
     print("Added {} ({})".format(job.get("title", "job"), identifier))
     return 0
@@ -473,6 +502,7 @@ def command_status(args: argparse.Namespace) -> int:
         row["applied_date"] = dt.date.today().isoformat()
     if args.note:
         row["notes"] = "{}{}".format(row.get("notes", ""), ("\n" if row.get("notes") else "") + args.note)
+    _protect_tracker_data()
     write_rows(path, rows)
     record_event(path, args.id, "note", note="status → {}".format(args.new_status))
     print("Updated {}".format(args.id))
@@ -503,6 +533,7 @@ def copy_into_archive(source_name: Optional[str], folder: Path) -> None:
             return
         print("warning: preserving existing archive file {}".format(destination.name), file=sys.stderr)
         return
+    _protect_write_target(destination)
     shutil.copy2(source, destination)
 
 
@@ -545,6 +576,7 @@ def write_fetched_posting(folder: Path, row: dict[str, Any]) -> None:
         if path.exists():
             print("warning: preserving existing archive file {}".format(path.name), file=sys.stderr)
         else:
+            _protect_write_target(path)
             path.write_text(content, encoding="utf-8")
 
 
@@ -555,6 +587,8 @@ def command_archive(args: argparse.Namespace) -> int:
     if row is None:
         raise ValueError("No tracked job with id '{}'.".format(args.id))
     folder = archive_folder(path.parent, row)
+    _protect_tracker_data()
+    _protect_write_target(folder)
     folder.mkdir(parents=True, exist_ok=True)
     for source in (args.cv, args.letter, args.posting):
         copy_into_archive(source, folder)
@@ -662,9 +696,14 @@ def main(argv: Optional[list[str]] = None) -> int:
                            help="Maximum follow-ups before suggesting ghosted (default: 2)")
     stats = subparsers.add_parser("stats", help="Summarize applications and outcomes")
     stats.add_argument("--format", choices=("md", "json"), default="md")
+    subparsers.add_parser("protect", help="Protect the local job-search data directory")
     subparsers.add_parser("due", help="List rows with next_action_date due today or earlier")
     args = parser.parse_args(argv)
     try:
+        if args.command == "protect":
+            result = _protect_tracker_data()
+            print(json_text(result))
+            return 0
         path = tracker_path()
         if args.command == "add":
             if args.from_json:
