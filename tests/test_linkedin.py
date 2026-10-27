@@ -128,6 +128,17 @@ class LinkedInParsingTests(unittest.TestCase):
 
 
 class LinkedInNetworkTests(unittest.TestCase):
+    def test_http_999_stops_without_retry_or_connection_switch_advice(self):
+        import linkedin
+        with patch('linkedin._pace'), patch('linkedin.time.sleep') as sleep, \
+                patch('linkedin.request_bytes', return_value=(999, b'')) as request:
+            with self.assertRaisesRegex(linkedin.LinkedInBlockedError, 'stop this source') as caught:
+                linkedin.fetch_html('https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search')
+        request.assert_called_once()
+        sleep.assert_not_called()
+        self.assertNotIn('home connection', str(caught.exception))
+        self.assertNotIn('browser recipe', str(caught.exception))
+
     def test_transport_errors_become_linkedin_request_errors(self):
         import socket
         import urllib.error

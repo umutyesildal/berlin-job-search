@@ -77,7 +77,7 @@ def fetch_html(url: str, allow_not_found: bool = False) -> str:
                 return body.decode("utf-8", "replace")
             if status == 999:
                 raise LinkedInBlockedError(
-                    "LinkedIn blocks datacenter/VPN IPs; run from a home connection or use the browser recipe"
+                    "LinkedIn denied guest access (HTTP 999); stop this source and continue with other job sources"
                 )
             if status == 404 and allow_not_found:
                 return ""

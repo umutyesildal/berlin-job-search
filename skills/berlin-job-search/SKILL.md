@@ -115,8 +115,9 @@ These facts change everything:
      --seen-file job-search/seen.json --format json --out job-search/searches/$(date +%F)-recruiter.json
    ```
    Flags: `--english-only`, `--remote`, `--with-description`, `--only-new`, `--limit`. Report any
-   source marked failed in `meta.sources` and carry on. LinkedIn returns HTTP 999 from cloud or
-   VPN IPs; fall back to browser recipes or search links. For non-tech fields also hand the user
+   source marked failed in `meta.sources` and carry on with other sources. If LinkedIn returns
+   HTTP 999, stop that source; do not switch connections or use a browser to work around the block.
+   For non-tech fields also hand the user
    the StepStone, Indeed and XING links from `references/browser-search.md`; those portals carry
    most of those jobs.
 4. **Go deeper when useful:** `scripts/linkedin.py search|detail` for LinkedIn filters and full
