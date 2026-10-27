@@ -115,30 +115,34 @@ def validate_local_paths() -> list[str]:
     ]
 
 def validate_readme_links() -> list[str]:
-    readme = ROOT / "README.md"
-    if not readme.is_file():
-        return ["README.md is missing"]
-    errors, in_fence = [], False
-    for number, line in enumerate(readme.read_text(encoding="utf-8").splitlines(), 1):
-        if line.lstrip().startswith(("```", "~~~")):
-            in_fence = not in_fence
+    errors = []
+    for filename in ("README.md", "README.de.md"):
+        readme = ROOT / filename
+        if not readme.is_file():
+            if filename == "README.md":
+                errors.append("{} is missing".format(filename))
             continue
-        if in_fence:
-            continue
-        for match in LINK_RE.finditer(line):
-            target = match.group(1).strip()
-            target = target[1:target.index(">" )] if target.startswith("<") and ">" in target else target.split(None, 1)[0]
-            parsed = urlsplit(target)
-            if parsed.scheme or parsed.netloc or not parsed.path or parsed.path.startswith("/"):
+        in_fence = False
+        for number, line in enumerate(readme.read_text(encoding="utf-8").splitlines(), 1):
+            if line.lstrip().startswith(("```", "~~~")):
+                in_fence = not in_fence
                 continue
-            resolved = (readme.parent / unquote(parsed.path)).resolve()
-            try:
-                resolved.relative_to(ROOT)
-            except ValueError:
-                errors.append("README.md:{} link escapes repository: {}".format(number, target))
+            if in_fence:
                 continue
-            if not resolved.exists():
-                errors.append("README.md:{} broken relative link: {}".format(number, target))
+            for match in LINK_RE.finditer(line):
+                target = match.group(1).strip()
+                target = target[1:target.index(">" )] if target.startswith("<") and ">" in target else target.split(None, 1)[0]
+                parsed = urlsplit(target)
+                if parsed.scheme or parsed.netloc or not parsed.path or parsed.path.startswith("/"):
+                    continue
+                resolved = (readme.parent / unquote(parsed.path)).resolve()
+                try:
+                    resolved.relative_to(ROOT)
+                except ValueError:
+                    errors.append("{}:{} link escapes repository: {}".format(filename, number, target))
+                    continue
+                if not resolved.exists():
+                    errors.append("{}:{} broken relative link: {}".format(filename, number, target))
     return errors
 
 def main() -> int:
