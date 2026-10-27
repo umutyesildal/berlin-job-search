@@ -1,5 +1,7 @@
 # Berlin Job Search
 
+**English** | [Deutsch](README.de.md)
+
 **An AI job-search coach that knows how hiring works in Germany.** Berlin first, Germany-wide.
 
 [![CI](https://github.com/umutyesildal/berlin-job-search/actions/workflows/ci.yml/badge.svg)](https://github.com/umutyesildal/berlin-job-search/actions/workflows/ci.yml)
