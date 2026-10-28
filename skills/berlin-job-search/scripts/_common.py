@@ -100,7 +100,23 @@ def protect_data_dir(path: Any) -> dict[str, Any]:
                 protected = False
                 warnings.append("Could not read {}: {}".format(gitignore, error))
             else:
-                if not any(line.strip() == "*" and not line.lstrip().startswith("#") for line in lines):
+                has_wildcard = False
+                has_exception = False
+                for line in lines:
+                    stripped = line.lstrip()
+                    if not stripped or stripped.startswith("#"):
+                        continue
+                    if line.strip() == "*":
+                        has_wildcard = True
+                    if stripped.startswith("!"):
+                        has_exception = True
+                if has_exception:
+                    protected = False
+                    warnings.append(
+                        "{} contains a Git ignore exception; remove the exception or choose a data "
+                        "directory outside the repository to protect personal data.".format(gitignore)
+                    )
+                if not has_wildcard:
                     protected = False
                     warnings.append("Add a line '*' to {} to protect this data directory.".format(gitignore))
 
@@ -147,6 +163,38 @@ def protect_data_dir(path: Any) -> dict[str, Any]:
                         .format(len(paths), root, root)
                     )
                     tracked_files = paths[:20]
+
+    if git is not None:
+        try:
+            unignored_result = subprocess.run(
+                [git, "-C", str(root), "ls-files", "-z", "--others", "--exclude-standard", "--", "."],
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            protected = False
+            warnings.append("Could not check unignored files in {}: {}".format(root, error))
+        else:
+            if unignored_result.returncode != 0:
+                protected = False
+                warnings.append(
+                    "Could not check unignored files in {}; Git returned an error.".format(root)
+                )
+            else:
+                unignored_files = [
+                    os.fsdecode(value)
+                    for value in unignored_result.stdout.split(b"\0")
+                    if value
+                ]
+                if unignored_files:
+                    protected = False
+                    shown_paths = ", ".join(unignored_files[:5])
+                    more = " (+{} more)".format(len(unignored_files) - 5) if len(unignored_files) > 5 else ""
+                    warnings.append(
+                        "Git can see unignored file(s) in {}: {}{}. Remove ignore exceptions or choose "
+                        "a data directory outside the repository.".format(root, shown_paths, more)
+                    )
 
     result = {
         "path": str(root),

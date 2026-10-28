@@ -166,6 +166,123 @@ class GitProtectedDataDirTests(unittest.TestCase):
             self.assertEqual(ignore_file.read_bytes(), original)
             self.assertTrue(any("add a line '*'" in warning.lower() for warning in result["warnings"]))
 
+    def test_gitignore_tracker_exception_is_unprotected_and_left_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "job-search"
+            data_dir.mkdir()
+            ignore_file = data_dir / ".gitignore"
+            original = b"*\n!tracker.csv\n"
+            ignore_file.write_bytes(original)
+
+            result = _common.protect_data_dir(data_dir)
+
+            self.assertFalse(result["protected"])
+            self.assertEqual(ignore_file.read_bytes(), original)
+            self.assertTrue(any(
+                str(ignore_file) in warning and "exception" in warning.lower()
+                for warning in result["warnings"]
+            ))
+
+    def test_gitignore_cv_exception_is_unprotected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "job-search"
+            data_dir.mkdir()
+            ignore_file = data_dir / ".gitignore"
+            ignore_file.write_text("*\n!cv.md\n", encoding="utf-8")
+
+            result = _common.protect_data_dir(data_dir)
+
+            self.assertFalse(result["protected"])
+            self.assertTrue(any(
+                str(ignore_file) in warning and "exception" in warning.lower()
+                for warning in result["warnings"]
+            ))
+
+    def test_escaped_exclamation_rule_is_not_a_negation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "job-search"
+            data_dir.mkdir()
+            ignore_file = data_dir / ".gitignore"
+            original = b"*\n\\!literal\n"
+            ignore_file.write_bytes(original)
+
+            result = _common.protect_data_dir(data_dir)
+
+            self.assertTrue(result["protected"], result["warnings"])
+            self.assertEqual(ignore_file.read_bytes(), original)
+            self.assertFalse(any("exception" in warning.lower() for warning in result["warnings"]))
+
+    def test_parent_level_negation_matches_effective_git_visibility(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            (repo / ".gitignore").write_text("!job-search/notes.md\n", encoding="utf-8")
+            data_dir = repo / "job-search"
+            data_dir.mkdir()
+            (data_dir / ".gitignore").write_text("*\n", encoding="utf-8")
+            notes_file = data_dir / "notes.md"
+            notes_file.write_text("Fictional private note.\n", encoding="utf-8")
+
+            effective = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(data_dir),
+                    "ls-files",
+                    "-z",
+                    "--others",
+                    "--exclude-standard",
+                    "--",
+                    ".",
+                ],
+                capture_output=True,
+                check=True,
+            )
+            visible_paths = [
+                os.fsdecode(value)
+                for value in effective.stdout.split(b"\0")
+                if value
+            ]
+            result = _common.protect_data_dir(data_dir)
+
+            self.assertEqual(result["protected"], not bool(visible_paths))
+            if visible_paths:
+                self.assertFalse(result["protected"])
+                self.assertTrue(any("notes.md" in warning for warning in result["warnings"]))
+
+    def test_custom_data_dir_with_negation_is_unprotected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "private" / "data"
+            data_dir.mkdir(parents=True)
+            ignore_file = data_dir / ".gitignore"
+            ignore_file.write_text("*\n!cv.md\n", encoding="utf-8")
+            env = os.environ.copy()
+            env["GJS_DATA_DIR"] = "private/data"
+
+            completed = subprocess.run(
+                [sys.executable, str(TRACKER), "protect"],
+                cwd=repo,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            result = json.loads(completed.stdout)
+
+            self.assertFalse(result["protected"])
+            self.assertTrue(any(
+                str(ignore_file) in warning and "exception" in warning.lower()
+                for warning in result["warnings"]
+            ))
+
     def test_tracker_protect_prints_json_and_exits_zero(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory)
