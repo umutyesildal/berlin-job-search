@@ -2,6 +2,7 @@
 
 > The user operates the browser. Portal URLs and filters change; verify visible filters and stop at login, CAPTCHA, 2FA or access denial.
 
+<!-- linkedin-guest:start -->
 ## LinkedIn Jobs
 
 Base URL: `https://www.linkedin.com/jobs/search/`.
@@ -19,6 +20,16 @@ Base URL: `https://www.linkedin.com/jobs/search/`.
 | `start` | Guest: `0`, `10`, `20`; web UI: 25-card pages `(verify)` | Guest offset is zero-based, 10 cards/page. |
 
 Example: `https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Berlin%2C%20Germany&geoId=103035651&f_TPR=r604800&sortBy=DD`. Use a logged-in browser only if the user chooses to sign in. Guest search is low-volume and subject to the [LinkedIn User Agreement](https://www.linkedin.com/legal/user-agreement); never use internal/Voyager APIs, cookies or login-session scraping. Search-card/detail parameters are in [API sources](api-sources.md).
+<!-- linkedin-guest:end -->
+<!-- linkedin-links:start -->
+<!--
+## LinkedIn Jobs
+
+Give the user a ready-made search link to open themselves, for example:
+[Data analyst jobs in Berlin](https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Berlin%2C%20Germany).
+They can adjust filters and review postings directly on LinkedIn.
+-->
+<!-- linkedin-links:end -->
 
 ## XING, StepStone, Indeed and BA
 
@@ -55,7 +66,9 @@ Do not use whole-page `get_page_text`; if an in-page JSON fetch appears after a 
 
 ## Extraction and approval
 
-- Extract only card fields: title, employer, location, date, remote/hybrid label and canonical URL. Prefer DOM attributes, JSON-LD or accessible text from one card. The LinkedIn public-card selectors are verified but may change; inspect one selected card and revise selectors rather than dumping the page.
+- Extract only card fields: title, employer, location, date, remote/hybrid label and canonical URL. Prefer DOM attributes, JSON-LD or accessible text from one card.
+<!-- linkedin-guest:start -->
+- The LinkedIn public-card selectors are verified but may change; inspect one selected card and revise selectors rather than dumping the page.
 - LinkedIn guest-card selector example (adapt only after checking the live DOM):
 
 ```js
@@ -73,6 +86,7 @@ Do not use whole-page `get_page_text`; if an in-page JSON fetch appears after a 
   }).filter((card) => card.title && card.url);
 })();
 ```
+<!-- linkedin-guest:end -->
 - Keep result sets small: no more than three pages/query, 25 cards/page, and 2–4 seconds between page loads. Read details only for a user-selected shortlist.
 - Confirm freshness, job state and application destination on the employer page. Ads can be stale or personalized.
 - Never bypass challenges, evade blocks, bulk-message, or click Apply/Submit/Send. Saving a job, setting an alert, changing a profile or sharing a CV requires per-action user approval.

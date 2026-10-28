@@ -31,6 +31,20 @@ def default_data_dir() -> Path:
     return Path(os.environ.get("GJS_DATA_DIR") or "./job-search")
 
 
+def disabled_sources() -> set[str]:
+    build_file = Path(__file__).resolve().parent.parent / "assets" / "build.json"
+    if not build_file.is_file():
+        return set()
+    try:
+        build = json.loads(build_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("invalid assets/build.json: {}".format(error)) from error
+    sources = build.get("disabled_sources") if isinstance(build, dict) else None
+    if not isinstance(sources, list) or any(not isinstance(source, str) for source in sources):
+        raise ValueError("assets/build.json disabled_sources must be a list of source names")
+    return {source.strip().casefold() for source in sources if source.strip()}
+
+
 def protect_data_dir(path: Any) -> dict[str, Any]:
     root = Path(path).expanduser().resolve()
     cache_key = str(root)

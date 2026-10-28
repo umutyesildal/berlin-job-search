@@ -9,7 +9,16 @@ import urllib.parse
 from html.parser import HTMLParser
 from typing import Any, Optional
 
-from _common import USER_AGENT, json_text, request_bytes, request_json, salary_text, strip_html, write_output
+from _common import (
+    USER_AGENT,
+    disabled_sources,
+    json_text,
+    request_bytes,
+    request_json,
+    salary_text,
+    strip_html,
+    write_output,
+)
 from analyze_jd import analyze, employment_type_from_title
 
 
@@ -219,6 +228,8 @@ def warn_tos() -> None:
 
 
 def linkedin_detail(address: str) -> dict[str, Any]:
+    if "linkedin" in disabled_sources():
+        raise ValueError("LinkedIn detail fetching is disabled in this package; open the posting in your browser.")
     warn_tos()
     detail = fetch_linkedin_job_detail(address)
     title = detail.get("title") or ""
@@ -380,7 +391,10 @@ def main() -> int:
                         help="Posting URL or Bundesagentur für Arbeit reference number")
     parser.add_argument("--format", choices=("json", "md"), default="json", metavar="json|md")
     args = parser.parse_args()
-    detail = fetch_detail(args.url_or_ba_refnr)
+    try:
+        detail = fetch_detail(args.url_or_ba_refnr)
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        parser.error(str(error))
     output = json_text(detail) if args.format == "json" else markdown(detail)
     write_output(output)
     return 0
