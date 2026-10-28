@@ -2,7 +2,13 @@
 
 > Source APIs and job postings change; verify material details on the employer's current page.
 
-The scripts use Python's standard library, public endpoints, a 20-second request timeout and the user agent `berlin-job-search-skill/0.1 (+https://github.com/umutyesildal/berlin-job-search)`; LinkedIn uses a browser-like user agent. No login/secrets are required. Default sources: `dailyberlinjobs,ba,arbeitnow,ats,linkedin`; Freehire is opt-in. Each `meta.sources` entry has `ok`, `count`, `error` and `partial_errors`; a source fails only if it returns no records and has errors. Counts are post-filter, pre-dedup/global limit; partial errors preserve successful results. ATS uses at most four workers.
+The scripts use Python's standard library, public endpoints, a 20-second request timeout and the user agent `berlin-job-search-skill/0.1 (+https://github.com/umutyesildal/berlin-job-search)`. No login/secrets are required. Each `meta.sources` entry has `ok`, `count`, `error` and `partial_errors`; a source fails only if it returns no records and has errors. Counts are post-filter, pre-dedup/global limit; partial errors preserve successful results. ATS uses at most four workers.
+<!-- linkedin-guest:start -->
+LinkedIn uses a browser-like user agent. Default sources: `dailyberlinjobs,ba,arbeitnow,ats,linkedin`; Freehire is opt-in.
+<!-- linkedin-guest:end -->
+<!-- linkedin-links:start -->
+<!-- Default sources in this package: `dailyberlinjobs,ba,arbeitnow,ats`; Freehire is opt-in. LinkedIn is not an automated source here; provide ready-made search links from `browser-search.md` for the user to open themselves. -->
+<!-- linkedin-links:end -->
 
 ## Bundesagentur für Arbeit (BA) Jobsuche
 
@@ -54,6 +60,7 @@ Example company counts on 2026-10-23: Greenhouse Raisin 38, N26 37, Contentful 2
 
 The script does not implement unsupported ATS systems or silently use a credentialed endpoint. Hourly pay in `analyze_jd.py` is annualized at approximately 2,080 hours (40 hours × 52 weeks); monthly pay is annualized at 12 months.
 
+<!-- linkedin-guest:start -->
 ## LinkedIn
 
 There is no official public LinkedIn job-search API for individual job seekers. The [Job Posting API](https://learn.microsoft.com/en-us/linkedin/talent/job-postings/api/overview?view=li-lts-2026-03) is a partner product for posting/updating ads, not candidate search. This skill never uses internal Voyager endpoints, logged-in cookies or browser storage; private authenticated endpoints can change and risk account restrictions. LinkedIn's [User Agreement](https://www.linkedin.com/legal/user-agreement) and [prohibited software guidance](https://www.linkedin.com/help/linkedin/answer/a1341387) prohibit unauthorized automation/scraping.
@@ -104,6 +111,15 @@ python3 skills/berlin-job-search/scripts/linkedin.py search \
   --location "Berlin, Germany" --query "data engineer" --days 7 --pages 1
 python3 skills/berlin-job-search/scripts/linkedin.py detail 4385092199
 ```
+<!-- linkedin-guest:end -->
+<!-- linkedin-links:start -->
+<!--
+## LinkedIn
+
+LinkedIn search is not included as an automated source in this package. Give the user ready-made
+search links from `browser-search.md` to open themselves.
+-->
+<!-- linkedin-links:end -->
 
 ## Freehire
 

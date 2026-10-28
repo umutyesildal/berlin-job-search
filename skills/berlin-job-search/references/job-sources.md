@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | General | [StepStone](https://www.stepstone.de/) | Broad professional and specialist roles | Partly | Browser |
 | General | [Indeed Germany](https://de.indeed.com/) | Broad aggregation/employer listings; 403 in automated check | Partly | Browser |
-| General / remote | [LinkedIn Jobs](https://www.linkedin.com/jobs/) | Professional roles, alerts, recruiter discovery and remote/hybrid filters; guest search is unofficial/ToS-restricted | Yes/partly | CLI / browser |
+| General / remote | [LinkedIn Jobs](https://www.linkedin.com/jobs/) | Professional roles, alerts, recruiter discovery and remote/hybrid filters; <!-- linkedin-guest:start -->guest search is unofficial/ToS-restricted<!-- linkedin-guest:end --><!-- linkedin-links:start --><!-- search directly on LinkedIn's website and open results yourself --><!-- linkedin-links:end --> | Yes/partly | <!-- linkedin-guest:start -->CLI / browser<!-- linkedin-guest:end --><!-- linkedin-links:start --><!-- Browser --><!-- linkedin-links:end --> |
 | General | [XING Jobs](https://www.xing.com/jobs/search) | German-speaking professional roles and recruiter matching | Partly | Browser |
 | General / Ausbildung | [BA Jobsuche](https://www.arbeitsagentur.de/jobsuche/) | Broad jobs, public employment services and apprenticeships (filter for Ausbildung) | Partly | API / browser |
 | General | [Jobware](https://www.jobware.de/) | Qualified specialists and management | Partly | Browser |

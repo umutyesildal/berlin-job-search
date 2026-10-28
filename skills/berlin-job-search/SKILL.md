@@ -24,9 +24,14 @@ Route each request to one workflow below and load only the reference files it na
    `integrity.ok` is false in an analysis, tell the user what was found.
 4. **Visa, tax and legal answers are orientation.** Give the figure with its year and source, and
    name the deciding authority (Ausländerbehörde, Agentur für Arbeit, Finanzamt).
-5. **Respect the sites.** Prefer the scripts' APIs. The LinkedIn source uses logged-out guest pages
-   at low volume. Automated access is still against LinkedIn's User Agreement; say so once. Never
-   scrape while the user is logged in.
+5. **Respect the sites.** Prefer public APIs and user-operated search.
+<!-- linkedin-guest:start -->
+The LinkedIn source uses logged-out guest pages at low volume. Automated access is still against
+LinkedIn's User Agreement; say so once. Never scrape while the user is logged in.
+<!-- linkedin-guest:end -->
+<!-- linkedin-links:start -->
+<!-- For LinkedIn, provide ready-made search links the user can open themselves. If they share a posting, ask for its text; do not automate or fetch LinkedIn pages. -->
+<!-- linkedin-links:end -->
 6. **Say "unknown" instead of guessing.** If a dated figure is older than the current year,
    refresh it from the cited source.
 7. **Answer in the user's language** (or `output_language` from the profile). Explain German terms
@@ -100,6 +105,7 @@ These facts change everything:
    Engineer* + *Softwareentwickler*, *Nurse* → *Pflegefachkraft*, *Accountant* → *Buchhalter*,
    *Warehouse worker* → *Lagermitarbeiter*. Add *Werkstudent* for students and *Ausbildung* for
    apprenticeships.
+<!-- linkedin-guest:start -->
 2. **Pick sources for the field.** `dailyberlinjobs`, `ats` and `freehire` only list **tech,
    engineering and data roles**. For anything else (recruiting/HR, sales, marketing, finance,
    operations, healthcare, trades, hospitality) never show their results; use
@@ -123,6 +129,23 @@ These facts change everything:
    most of those jobs.
 4. **Go deeper when useful:** `scripts/linkedin.py search|detail` for LinkedIn filters and full
    text. `references/browser-search.md` for the other portals.
+<!-- linkedin-guest:end -->
+<!-- linkedin-links:start -->
+<!--
+2. **Pick sources for the field.** `dailyberlinjobs`, `ats` and `freehire` only list **tech,
+   engineering and data roles**. For other fields, use `ba,arbeitnow`. For LinkedIn, provide
+   ready-made search links from `references/browser-search.md` for the user to open themselves.
+
+   | Field | Sources | Title filter |
+   |---|---|---|
+   | Software, data, IT | defaults (`dailyberlinjobs,ba,arbeitnow,ats`) | off (skill words like "Python" appear outside titles) |
+   | Everything else | `ba,arbeitnow` | `--title-match` (BA matches its full text loosely) |
+3. **Run** each query with the listed sources. Report any source marked failed in `meta.sources`
+   and carry on with other sources. For non-tech fields, also give the user StepStone, Indeed and
+   XING links from `references/browser-search.md`.
+4. Use `references/browser-search.md` for user-operated LinkedIn and other portal searches.
+-->
+<!-- linkedin-links:end -->
 5. **Filter for relevance, then against the profile.** Drop every job whose title isn't the
    target role or a close variant (a recruiter search must not show engineers hired *by* staffing
    firms). Say how many you dropped. Flag agency/Zeitarbeit ads, which are common in BA results;
@@ -149,8 +172,13 @@ helping with the tools you do have:
   - `https://daily-berlin-jobs.vercel.app/api/v1/jobs?q=<term>&format=md` (also accepts `role`,
     `level`, `work_mode`, `since`)
   - `https://www.arbeitnow.com/api/job-board-api`
+<!-- linkedin-guest:start -->
 - **Web search** for BA, StepStone, Indeed and LinkedIn postings. The BA API needs a request header
   that web fetch can't send, so search its website instead.
+<!-- linkedin-guest:end -->
+<!-- linkedin-links:start -->
+<!-- - **Web search** for BA, StepStone and Indeed postings. The BA API needs a request header that web fetch can't send, so search its website instead. For LinkedIn, give the user a ready-made search link to open. -->
+<!-- linkedin-links:end -->
 
 Say once that live coverage is reduced in this environment, and that the full search runs in Claude
 Code or Codex. For pasted job ads, `analyze_jd.py`, `render_doc.py`, `ats_check.py` and

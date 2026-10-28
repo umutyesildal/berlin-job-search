@@ -5,6 +5,8 @@ import sys
 import zipfile
 from pathlib import Path
 
+from _package_blocks import select_marked_blocks
+
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_NAME = "berlin-job-search"
 SKILL_DIR = ROOT / "skills" / SKILL_NAME
@@ -26,7 +28,14 @@ def package_skill(output: Path = DEFAULT_OUTPUT) -> tuple[Path, int, int]:
 
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in files:
-            archive.write(path, Path(SKILL_NAME) / path.relative_to(SKILL_DIR))
+            relative = Path(SKILL_NAME) / path.relative_to(SKILL_DIR)
+            if path.suffix in {".md", ".py"}:
+                content = select_marked_blocks(
+                    path.read_text(encoding="utf-8"), set(), path.suffix,
+                )
+                archive.writestr(relative.as_posix(), content)
+            else:
+                archive.write(path, relative)
     if output.stat().st_size > MAX_UPLOAD_BYTES:
         raise ValueError("skill zip exceeds the general Claude.ai 30 MB file-upload limit")
     return output, len(files), output.stat().st_size

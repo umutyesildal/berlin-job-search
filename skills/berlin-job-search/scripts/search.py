@@ -20,6 +20,7 @@ from _common import (
     city_alias,
     city_location_matches,
     csv_text,
+    disabled_sources,
     json_text,
     linkedin_location_and_geo_id,
     markdown_table,
@@ -36,7 +37,11 @@ from _common import (
 from analyze_jd import analyze, employment_type_from_title
 
 DEFAULT_COMPANIES = Path(__file__).resolve().parent.parent / "assets" / "companies.json"
-DEFAULT_SOURCES = ("dailyberlinjobs", "ba", "arbeitnow", "ats", "linkedin")
+DISABLED_SOURCES = frozenset(disabled_sources())
+DEFAULT_SOURCES = tuple(
+    source for source in ("dailyberlinjobs", "ba", "arbeitnow", "ats", "linkedin")
+    if source not in DISABLED_SOURCES
+)
 TITLE_MATCH_STOP_WORDS = frozenset({
     "senior", "junior", "sr", "jr", "lead", "head", "principal", "werkstudent",
     "werkstudentin", "working", "student", "intern", "internship", "praktikant",
@@ -822,6 +827,8 @@ def linkedin_remote_value(location: str, remote_filter: bool) -> Optional[bool]:
 
 
 def fetch_linkedin(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list[str]]:
+    if "linkedin" in DISABLED_SOURCES:
+        raise ValueError("LinkedIn is disabled in this package; open LinkedIn search links in your browser.")
     from linkedin import (
         LinkedInRequestError,
         fetch_job_detail as fetch_linkedin_detail,
@@ -935,6 +942,10 @@ SOURCE_FETCHERS = {
     "linkedin": fetch_linkedin,
     "freehire": fetch_freehire,
 }
+SOURCE_FETCHERS = {
+    source: fetcher for source, fetcher in SOURCE_FETCHERS.items()
+    if source not in DISABLED_SOURCES
+}
 
 
 def source_status(
@@ -1025,6 +1036,13 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("--only-new requires --seen-file")
 
     requested = [source.strip().casefold() for source in str(args.sources).split(",") if source.strip()]
+    disabled = sorted(set(requested) & DISABLED_SOURCES)
+    if disabled:
+        raise ValueError(
+            "{} is disabled in this package; open LinkedIn search links in your browser.".format(
+                ", ".join(disabled)
+            )
+        )
     unknown = sorted(set(requested) - set(SOURCE_FETCHERS))
     if unknown:
         raise ValueError("unsupported source(s): {}".format(", ".join(unknown)))
@@ -1115,8 +1133,14 @@ def main() -> int:
     parser.add_argument("--where", default=None, help="City or region")
     parser.add_argument("--radius", type=int, default=25, help="BA search radius in km (default: 25)")
     parser.add_argument("--days", type=int, default=7, help="Posting age window in days (default: 7)")
-    parser.add_argument("--sources", default=",".join(DEFAULT_SOURCES),
-                        help="Comma-separated sources: dailyberlinjobs (Daily Berlin Jobs (Berlin tech jobs)), ba,arbeitnow,ats,linkedin,freehire (default: dailyberlinjobs,ba,arbeitnow,ats,linkedin)")
+    source_choices = ",".join(DEFAULT_SOURCES + ("freehire",))
+    parser.add_argument(
+        "--sources",
+        default=",".join(DEFAULT_SOURCES),
+        help="Comma-separated sources: {} (default: {})".format(
+            source_choices, ",".join(DEFAULT_SOURCES),
+        ),
+    )
     parser.add_argument("--companies", default=str(DEFAULT_COMPANIES),
                         help="ATS company catalog JSON (default: ../assets/companies.json)")
     parser.add_argument("--remote", action="store_true", help="Keep explicitly remote postings")
@@ -1126,8 +1150,9 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=100, help="Maximum number of output jobs (default: 100)")
     parser.add_argument("--max-pages", type=int, default=3,
                         help="Maximum pages for BA, Arbeitnow, and Freehire (default: 3)")
-    parser.add_argument("--linkedin-pages", type=int, default=1,
-                        help="LinkedIn pages per query, capped at 5 (default: 1)")
+    if "linkedin" not in DISABLED_SOURCES:
+        parser.add_argument("--linkedin-pages", type=int, default=1,
+                            help="LinkedIn pages per query, capped at 5 (default: 1)")
     parser.add_argument("--dbj-role", help="Daily Berlin Jobs (Berlin tech jobs) role filter (comma-separated status values)")
     parser.add_argument("--dbj-level", help="Daily Berlin Jobs (Berlin tech jobs) level filter (comma-separated status values)")
     parser.add_argument("--seen-file", help="Local JSON memory of previously seen job URLs and identities")
@@ -1135,15 +1160,19 @@ def main() -> int:
     parser.add_argument("--format", choices=("md", "json", "csv"), default="md", metavar="md|json|csv",
                         help="Output format (default: md)")
     parser.add_argument("--out", help="Write output to this file as well as stdout")
-    parser.add_argument("--with-description", action="store_true",
-                        help="Include descriptions (max 4000 chars; LinkedIn detail for first 10 hits)")
+    description_help = "Include descriptions (max 4000 chars)"
+    if "linkedin" not in DISABLED_SOURCES:
+        description_help += "; LinkedIn detail for first 10 hits"
+    parser.add_argument("--with-description", action="store_true", help=description_help)
     args = parser.parse_args()
     requested = [source.strip().casefold() for source in args.sources.split(",") if source.strip()]
-    if "linkedin" in requested:
+    # linkedin-guest:start
+    if "linkedin" in requested and "linkedin" not in DISABLED_SOURCES:
         print(
             "LinkedIn guest access is personal-use only, low-volume; automated access violates LinkedIn's User Agreement.",
             file=sys.stderr,
         )
+    # linkedin-guest:end
     try:
         result = run_search(vars(args))
     except (OSError, ValueError, json.JSONDecodeError) as error:
