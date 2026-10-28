@@ -1,0 +1,12 @@
+{
+  "skill-respect-sites": "\nFor LinkedIn, provide ready-made search links the user can open themselves. If they share a posting, ask for its text; do not automate or fetch LinkedIn pages.\n",
+  "skill-search-sources": "\n2. **Pick sources for the field.** `dailyberlinjobs`, `ats` and `freehire` only list **tech,\n   engineering and data roles**. For other fields, use `ba,arbeitnow`. For LinkedIn, provide\n   ready-made search links from `references/browser-search.md` for the user to open themselves.\n\n   | Field | Sources | Title filter |\n   |---|---|---|\n   | Software, data, IT | defaults (`dailyberlinjobs,ba,arbeitnow,ats`) | off (skill words like \"Python\" appear outside titles) |\n   | Everything else | `ba,arbeitnow` | `--title-match` (BA matches its full text loosely) |\n3. **Run** each query with the listed sources. Report any source marked failed in `meta.sources`\n   and carry on with other sources. For non-tech fields, also give the user StepStone, Indeed and\n   XING links from `references/browser-search.md`.\n4. Use `references/browser-search.md` for user-operated LinkedIn and other portal searches.\n",
+  "skill-web-search-fallback": "- **Web search** for BA, StepStone and Indeed postings. The BA API needs a request header\n  that web fetch can't send, so search its website instead. For LinkedIn, provide a ready-made\n  search link for the user to open.\n",
+  "api-default-sources": "\nDefault sources in this package: `dailyberlinjobs,ba,arbeitnow,ats`; Freehire is opt-in. LinkedIn is not an automated source here; provide ready-made search links from `browser-search.md` for the user to open themselves.\n",
+  "api-linkedin-section": "\n## LinkedIn\n\nLinkedIn search is not an automated source in this package. Give the user a ready-made search link from `browser-search.md` to open themselves. If they share a posting, ask them to paste its text.\n",
+  "browser-linkedin-section": "\n## LinkedIn Jobs\n\nGive the user a ready-made search link to open themselves, for example:\n[Data analyst jobs in Berlin](https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Berlin%2C%20Germany).\nThey can adjust filters and review postings directly on LinkedIn.\n",
+  "browser-linkedin-selector": "",
+  "job-sources-note": "search directly on LinkedIn's website and open results yourself",
+  "job-sources-access": "Browser",
+  "search-warning": ""
+}

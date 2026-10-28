@@ -5,7 +5,7 @@ import sys
 import zipfile
 from pathlib import Path
 
-from _package_blocks import select_marked_blocks
+from _package_blocks import strip_guest_markers
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_NAME = "berlin-job-search"
@@ -30,9 +30,7 @@ def package_skill(output: Path = DEFAULT_OUTPUT) -> tuple[Path, int, int]:
         for path in files:
             relative = Path(SKILL_NAME) / path.relative_to(SKILL_DIR)
             if path.suffix in {".md", ".py"}:
-                content = select_marked_blocks(
-                    path.read_text(encoding="utf-8"), set(), path.suffix,
-                )
+                content = strip_guest_markers(path.read_text(encoding="utf-8"), path.suffix)
                 archive.writestr(relative.as_posix(), content)
             else:
                 archive.write(path, relative)

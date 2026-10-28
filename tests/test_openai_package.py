@@ -12,7 +12,7 @@ sys.path.insert(0, str(TOOLS))
 
 import package_openai
 import package_skill
-from _package_blocks import select_marked_blocks
+from _package_blocks import apply_guest_overrides, strip_guest_markers
 
 
 class OpenAIPackageTests(unittest.TestCase):
@@ -32,13 +32,26 @@ class OpenAIPackageTests(unittest.TestCase):
     def tearDownClass(cls):
         cls.temporary.cleanup()
 
-    def test_markers_select_canonical_or_disabled_source_instructions(self):
+    def test_id_overrides_replace_block_and_inline_markers_and_require_entries(self):
         text = (
-            "<!-- linkedin-guest:start -->canonical<!-- linkedin-guest:end -->"
-            "<!-- linkedin-links:start --><!-- packaged --><!-- linkedin-links:end -->"
+            "<!-- linkedin-guest:start id=section -->canonical<!-- linkedin-guest:end id=section -->"
+            "|<!-- linkedin-guest:start id=cell -->guest<!-- linkedin-guest:end id=cell -->|"
         )
-        self.assertEqual(select_marked_blocks(text, set(), ".md"), "canonical")
-        self.assertEqual(select_marked_blocks(text, {"linkedin"}, ".md"), "packaged")
+        overrides = {"section": "packaged", "cell": ""}
+        used = set()
+        self.assertEqual(
+            apply_guest_overrides(text, overrides, ".md", used),
+            "packaged||",
+        )
+        self.assertEqual(used, set(overrides))
+        self.assertEqual(strip_guest_markers(text, ".md"), "canonical|guest|")
+        with self.assertRaisesRegex(ValueError, "missing OpenAI override"):
+            apply_guest_overrides(
+                "<!-- linkedin-guest:start id=missing -->x<!-- linkedin-guest:end id=missing -->",
+                {},
+                ".md",
+                set(),
+            )
 
     def test_canonical_skill_zip_keeps_existing_linkedin_instructions(self):
         output = self.temp_dir / "canonical-skill.zip"
@@ -48,6 +61,31 @@ class OpenAIPackageTests(unittest.TestCase):
         self.assertIn("The LinkedIn source uses logged-out guest pages", skill)
         self.assertNotIn("linkedin-links:", skill)
         self.assertNotIn("ready-made search links", skill)
+
+    def test_canonical_sources_have_no_alternative_blocks_and_package_uses_overrides(self):
+        canonical_files = [
+            ROOT / "skills" / "berlin-job-search" / "SKILL.md",
+            *(ROOT / "skills" / "berlin-job-search" / "references").glob("*.md"),
+        ]
+        for path in canonical_files:
+            self.assertNotIn("linkedin-links", path.read_text(encoding="utf-8"))
+        with zipfile.ZipFile(self.archive_path) as archive:
+            skill = archive.read(
+                "berlin-job-search/skills/berlin-job-search/SKILL.md"
+            ).decode("utf-8")
+            api_sources = archive.read(
+                "berlin-job-search/skills/berlin-job-search/references/api-sources.md"
+            ).decode("utf-8")
+            browser_search = archive.read(
+                "berlin-job-search/skills/berlin-job-search/references/browser-search.md"
+            ).decode("utf-8")
+            job_sources = archive.read(
+                "berlin-job-search/skills/berlin-job-search/references/job-sources.md"
+            ).decode("utf-8")
+        self.assertIn("provide ready-made search links the user can open themselves", skill)
+        self.assertIn("LinkedIn is not an automated source here", api_sources)
+        self.assertIn("Data analyst jobs in Berlin", browser_search)
+        self.assertIn("search directly on LinkedIn's website", job_sources)
 
     def test_manifest_is_valid_and_uses_skill_version(self):
         manifest_path = "berlin-job-search/.codex-plugin/plugin.json"

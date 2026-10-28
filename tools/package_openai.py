@@ -11,17 +11,17 @@ from pathlib import Path
 from typing import Optional
 
 try:
-    from ._package_blocks import select_marked_blocks
+    from ._package_blocks import apply_guest_overrides
 except ImportError:
-    from _package_blocks import select_marked_blocks
+    from _package_blocks import apply_guest_overrides
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_NAME = "berlin-job-search"
 SKILL_DIR = ROOT / "skills" / SKILL_NAME
 ICON_DIR = ROOT / "packaging" / "openai" / "assets"
+OVERRIDES_FILE = ROOT / "packaging" / "openai" / "overrides" / "linkedin.json"
 ICON_NAMES = ("icon.png", "icon-dark.png", "logo.png", "logo-dark.png")
 DEFAULT_OUTPUT = ROOT / "dist" / (SKILL_NAME + "-openai.zip")
-DISABLED_SOURCES = {"linkedin"}
 GITHUB_URL = "https://github.com/umutyesildal/berlin-job-search"
 ISSUES_URL = GITHUB_URL + "/issues"
 
@@ -144,6 +144,19 @@ def png_dimensions(path: Path) -> tuple[int, int]:
     return struct.unpack(">II", data[16:24])
 
 
+def load_overrides() -> dict[str, str]:
+    try:
+        overrides = json.loads(OVERRIDES_FILE.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("invalid OpenAI overrides: {}".format(error)) from error
+    if not isinstance(overrides, dict) or any(
+        not isinstance(block_id, str) or not isinstance(content, str)
+        for block_id, content in overrides.items()
+    ):
+        raise ValueError("OpenAI overrides must map block IDs to text strings")
+    return overrides
+
+
 def package_openai(output: Path = DEFAULT_OUTPUT) -> tuple[Path, int, int]:
     skill_md = SKILL_DIR / "SKILL.md"
     if not skill_md.is_file():
@@ -152,6 +165,8 @@ def package_openai(output: Path = DEFAULT_OUTPUT) -> tuple[Path, int, int]:
         raise FileNotFoundError("privacy policy not found: {}".format(ROOT / "PRIVACY.md"))
     version = skill_version()
     manifest = manifest_for(version)
+    overrides = load_overrides()
+    used_overrides: set[str] = set()
     short_description = manifest["interface"]["shortDescription"]
     if len(short_description) > 30:
         raise ValueError("interface.shortDescription must be at most 30 characters")
@@ -173,10 +188,19 @@ def package_openai(output: Path = DEFAULT_OUTPUT) -> tuple[Path, int, int]:
 
         for path in sorted(skill_copy.rglob("*")):
             if path.is_file() and path.suffix in {".md", ".py"}:
-                content = select_marked_blocks(
-                    path.read_text(encoding="utf-8"), DISABLED_SOURCES, path.suffix,
+                content = apply_guest_overrides(
+                    path.read_text(encoding="utf-8"),
+                    overrides,
+                    path.suffix,
+                    used_overrides,
                 )
                 path.write_text(content, encoding="utf-8")
+
+        unused_overrides = set(overrides) - used_overrides
+        if unused_overrides:
+            raise ValueError(
+                "unused OpenAI LinkedIn overrides: {}".format(", ".join(sorted(unused_overrides)))
+            )
 
         build_file = skill_copy / "assets" / "build.json"
         build_file.write_text('{"disabled_sources":["linkedin"]}\n', encoding="utf-8")
