@@ -127,7 +127,7 @@ Other agents use the same skill in plain chat. Some example prompts:
 | Bundesagentur für Arbeit | Germany's largest job database (public API) |
 | LinkedIn | Logged-out guest job search, low volume (unofficial; subject to LinkedIn's User Agreement) |
 | Arbeitnow | Aggregated company job boards (public API) |
-| Daily Berlin Jobs | Berlin tech jobs: about 1,500 roles, refreshed daily (public API and MCP) |
+| [Daily Berlin Jobs](https://daily-berlin-jobs.vercel.app) | Berlin tech jobs: about 1,500 roles, refreshed daily (public API and MCP) |
 | 33 company boards | Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee, Workable |
 | StepStone, Indeed, XING, hiring.cafe | Ready-made search links and browser recipes |
 | freehire.me | Optional tech source |

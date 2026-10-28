@@ -118,7 +118,7 @@ Andere Agenten nutzen denselben Skill im normalen Chat. Beispiele für Prompts:
 | Bundesagentur für Arbeit | Deutschlands größte Jobdatenbank (öffentliche API) |
 | LinkedIn | Jobsuche als ausgeloggter Gast, geringe Abfragefrequenz (inoffiziell; unterliegt der Nutzungsvereinbarung von LinkedIn) |
 | Arbeitnow | Aggregierte Unternehmens-Jobbörsen (öffentliche API) |
-| Daily Berlin Jobs | Berliner Tech-Stellen: etwa 1.500 Jobs, täglich aktualisiert (öffentliche API und MCP) |
+| [Daily Berlin Jobs](https://daily-berlin-jobs.vercel.app) | Berliner Tech-Stellen: etwa 1.500 Jobs, täglich aktualisiert (öffentliche API und MCP) |
 | 33 Unternehmens-Karriereseiten | Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee, Workable |
 | StepStone, Indeed, XING, hiring.cafe | Fertige Suchlinks und Browser-Anleitungen |
 | freehire.me | Optionale Quelle für Tech-Stellen |
