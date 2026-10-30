@@ -166,6 +166,90 @@ class GitProtectedDataDirTests(unittest.TestCase):
             self.assertEqual(ignore_file.read_bytes(), original)
             self.assertTrue(any("add a line '*'" in warning.lower() for warning in result["warnings"]))
 
+    def test_leading_space_wildcard_is_unprotected_and_left_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "job-search"
+            data_dir.mkdir()
+            ignore_file = data_dir / ".gitignore"
+            original = b" *\n.gitignore\n"
+            ignore_file.write_bytes(original)
+
+            result = _common.protect_data_dir(data_dir)
+
+            self.assertFalse(result["protected"])
+            self.assertEqual(ignore_file.read_bytes(), original)
+            self.assertTrue(any(
+                "would not ignore" in warning.lower()
+                or "add a line '*'" in warning.lower()
+                for warning in result["warnings"]
+            ))
+
+    def test_custom_data_dir_with_leading_space_wildcard_is_unprotected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "private" / "data"
+            data_dir.mkdir(parents=True)
+            ignore_file = data_dir / ".gitignore"
+            original = b" *\n.gitignore\n"
+            ignore_file.write_bytes(original)
+            env = os.environ.copy()
+            env["GJS_DATA_DIR"] = "private/data"
+
+            completed = subprocess.run(
+                [sys.executable, str(TRACKER), "protect"],
+                cwd=repo,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            result = json.loads(completed.stdout)
+
+            self.assertFalse(result["protected"])
+            self.assertEqual(ignore_file.read_bytes(), original)
+            self.assertTrue(any(
+                "would not ignore" in warning.lower()
+                or "add a line '*'" in warning.lower()
+                for warning in result["warnings"]
+            ))
+
+    def test_trailing_spaces_after_wildcard_are_ignored_by_git(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "job-search"
+            data_dir.mkdir()
+            ignore_file = data_dir / ".gitignore"
+            ignore_file.write_bytes(b"*   \n")
+
+            result = _common.protect_data_dir(data_dir)
+
+            self.assertTrue(result["protected"], result["warnings"])
+            self.assertEqual(result["warnings"], [])
+            ignored = subprocess.run(
+                ["git", "check-ignore", "-q", "job-search/tracker.csv"],
+                cwd=repo,
+                check=False,
+            )
+            self.assertEqual(ignored.returncode, 0)
+
+    def test_unignored_probe_helper_reports_paths_not_matching_ignore_rules(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            init_repo(repo)
+            data_dir = repo / "job-search"
+            data_dir.mkdir()
+            (data_dir / ".gitignore").write_bytes(b"*.md\n")
+
+            unignored = _common._unignored_probes(shutil.which("git"), data_dir)
+
+            self.assertIsNotNone(unignored)
+            self.assertIn("tracker.csv", unignored)
+            self.assertNotIn("cv.md", unignored)
+
     def test_gitignore_tracker_exception_is_unprotected_and_left_unchanged(self):
         with tempfile.TemporaryDirectory() as directory:
             repo = Path(directory)

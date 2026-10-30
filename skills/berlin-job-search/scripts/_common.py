@@ -17,11 +17,28 @@ import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Optional
 
 USER_AGENT = "berlin-job-search-skill/0.1 (+https://github.com/umutyesildal/berlin-job-search)"
+
+GIT_IGNORE_PROBES = (
+    "profile.yml",
+    "cv.md",
+    "progress.md",
+    "tracker.csv",
+    "seen.json",
+    "events.jsonl",
+    "report.html",
+    "shortlists/gjs-probe.md",
+    "reports/gjs-probe.md",
+    "applications/gjs-probe/posting.md",
+    "interview-prep/gjs-probe.md",
+    "plans/gjs-probe.md",
+    "searches/gjs-probe.json",
+)
 
 _DATA_DIR_PROTECTION_CACHE: dict[str, dict[str, Any]] = {}
 _DATA_DIR_WARNINGS_PRINTED: set[str] = set()
@@ -29,6 +46,28 @@ _DATA_DIR_WARNINGS_PRINTED: set[str] = set()
 
 def default_data_dir() -> Path:
     return Path(os.environ.get("GJS_DATA_DIR") or "./job-search")
+
+
+def _unignored_probes(git: str, root: Path) -> Optional[list[str]]:
+    probes = GIT_IGNORE_PROBES + ("gjs-probe-{}.txt".format(uuid.uuid4().hex),)
+    try:
+        result = subprocess.run(
+            [git, "-C", str(root), "check-ignore", "--no-index", "-z", "--stdin"],
+            input=b"\0".join(os.fsencode(probe) for probe in probes) + b"\0",
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode not in (0, 1):
+        return None
+    ignored = {
+        os.fsdecode(value)
+        for value in result.stdout.split(b"\0")
+        if value
+    }
+    return [probe for probe in probes if probe not in ignored]
 
 
 def disabled_sources() -> set[str]:
@@ -106,7 +145,7 @@ def protect_data_dir(path: Any) -> dict[str, Any]:
                     stripped = line.lstrip()
                     if not stripped or stripped.startswith("#"):
                         continue
-                    if line.strip() == "*":
+                    if line.rstrip(" ") == "*":
                         has_wildcard = True
                     if stripped.startswith("!"):
                         has_exception = True
@@ -195,6 +234,24 @@ def protect_data_dir(path: Any) -> dict[str, Any]:
                         "Git can see unignored file(s) in {}: {}{}. Remove ignore exceptions or choose "
                         "a data directory outside the repository.".format(root, shown_paths, more)
                     )
+
+    if git is not None and worktree != root:
+        unignored_probes = _unignored_probes(git, root)
+        if unignored_probes is None:
+            protected = False
+            warnings.append("Could not check Git ignore rules in {}.".format(root))
+        elif unignored_probes:
+            protected = False
+            shown_paths = ", ".join(unignored_probes[:5])
+            more = " (+{} more)".format(len(unignored_probes) - 5) if len(unignored_probes) > 5 else ""
+            warnings.append(
+                "Git would not ignore {} in {}. Make sure {}/.gitignore has a line that is exactly '*' "
+                "and no exceptions, or choose a data directory outside the repository.".format(
+                    shown_paths,
+                    root,
+                    root,
+                )
+            )
 
     result = {
         "path": str(root),
