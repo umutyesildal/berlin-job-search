@@ -86,6 +86,8 @@ class OpenAIPackageTests(unittest.TestCase):
         self.assertIn("LinkedIn is not an automated source here", api_sources)
         self.assertIn("Data analyst jobs in Berlin", browser_search)
         self.assertIn("search directly on LinkedIn's website", job_sources)
+        for tool_name in ("search_jobs", "get_job", "get_status", "list_companies"):
+            self.assertIn("`{}`".format(tool_name), skill)
 
     def test_manifest_is_valid_and_uses_skill_version(self):
         manifest_path = "berlin-job-search/.codex-plugin/plugin.json"
@@ -93,7 +95,7 @@ class OpenAIPackageTests(unittest.TestCase):
             manifest = json.loads(archive.read(manifest_path).decode("utf-8"))
         required = {
             "name", "version", "description", "author", "homepage", "repository",
-            "license", "keywords", "skills", "interface", "extensions",
+            "license", "keywords", "skills", "mcpServers", "interface", "extensions",
         }
         self.assertTrue(required.issubset(manifest))
         self.assertEqual(manifest["name"], "berlin-job-search")
@@ -104,9 +106,50 @@ class OpenAIPackageTests(unittest.TestCase):
         self.assertEqual(interface["supportURL"], package_openai.ISSUES_URL)
         self.assertEqual(
             manifest["extensions"]["com.openai"]["publication"]["release_notes"],
-            "Initial release: job search for Berlin and Germany, German-language and "
-            "Blue Card checks, Lebenslauf/CV drafting, interview practice.",
+            "First directory release: live Berlin tech jobs through the Daily Berlin Jobs MCP "
+            "server, German-language and Blue Card checks for any posting, search links for "
+            "other German job portals, Lebenslauf/CV drafting and interview practice.",
         )
+
+    def test_mcp_server_and_review_metadata_are_bundled(self):
+        with zipfile.ZipFile(self.archive_path) as archive:
+            mcp_config = json.loads(archive.read("berlin-job-search/.mcp.json").decode("utf-8"))
+            manifest = json.loads(
+                archive.read("berlin-job-search/.codex-plugin/plugin.json").decode("utf-8")
+            )
+        self.assertEqual(
+            mcp_config,
+            {
+                "mcpServers": {
+                    "daily-berlin-jobs": {
+                        "url": "https://daily-berlin-jobs.vercel.app/api/mcp",
+                    }
+                }
+            },
+        )
+        self.assertEqual(manifest["mcpServers"], "./.mcp.json")
+        interface = manifest["interface"]
+        self.assertEqual(
+            interface["shortDescription"],
+            "Berlin jobs and German checks",
+        )
+        self.assertEqual(interface["termsOfServiceURL"], package_openai.GITHUB_URL + "/blob/main/TERMS.md")
+        self.assertLessEqual(
+            len(manifest["extensions"]["com.openai"]["publication"]["translations"]["de-DE"]["subtitle"]),
+            30,
+        )
+        review = manifest["extensions"]["com.openai"]["review"]
+        self.assertFalse(review["commerce"])
+        self.assertEqual(len(review["test_cases"]["positive"]), 5)
+        self.assertEqual(len(review["test_cases"]["negative"]), 3)
+        self.assertNotIn("demo_recording_url", review)
+        allowed_tools = {"get_status", "search_jobs", "get_job", "list_companies"}
+        for case in review["test_cases"]["positive"]:
+            self.assertTrue(set(case["tools_triggered"]).issubset(allowed_tools))
+            self.assertIn("expected_behavior", case)
+        self.assertTrue(all(
+            "expected_behavior" in case for case in review["test_cases"]["negative"]
+        ))
 
     def test_packaged_search_uses_defaults_without_importing_linkedin(self):
         script = r'''
@@ -174,6 +217,7 @@ assert "linkedin" not in sys.modules
             top_level = {PurePosixPath(name).parts[0] for name in names}
             self.assertEqual(top_level, {"berlin-job-search"})
             self.assertFalse(any(PurePosixPath(name).name == "linkedin.py" for name in names))
+            self.assertIn("berlin-job-search/.mcp.json", names)
             build_data = archive.read(
                 "berlin-job-search/skills/berlin-job-search/assets/build.json"
             ).decode("utf-8")

@@ -24,6 +24,7 @@ ICON_NAMES = ("icon.png", "icon-dark.png", "logo.png", "logo-dark.png")
 DEFAULT_OUTPUT = ROOT / "dist" / (SKILL_NAME + "-openai.zip")
 GITHUB_URL = "https://github.com/umutyesildal/berlin-job-search"
 ISSUES_URL = GITHUB_URL + "/issues"
+DBJ_MCP_URL = "https://daily-berlin-jobs.vercel.app/api/mcp"
 
 
 def skill_version() -> str:
@@ -52,8 +53,8 @@ def manifest_for(version: str) -> dict:
         "name": SKILL_NAME,
         "version": version,
         "description": (
-            "Job search for Berlin and the rest of Germany: live jobs, German-language and "
-            "Blue Card checks, Lebenslauf/CV drafts and interview prep."
+            "Job search help for Berlin and Germany: live Berlin tech jobs, German-language and "
+            "Blue Card checks for any posting, Lebenslauf/CV drafts and interview practice."
         ),
         "author": {
             "name": "Umut Yesildal",
@@ -66,21 +67,24 @@ def manifest_for(version: str) -> dict:
             "job search", "Germany", "Berlin", "Lebenslauf", "Blue Card", "career",
         ],
         "skills": "./skills/",
+        "mcpServers": "./.mcp.json",
         "interface": {
             "displayName": "Berlin Job Search",
-            "shortDescription": "Find jobs and check German",
+            "shortDescription": "Berlin jobs and German checks",
             "longDescription": (
-                "Search current jobs in Berlin and across Germany with German and English job "
-                "titles. For any posting, see whether German is required, a plus or not mentioned, "
-                "with the exact line quoted, plus salary and EU Blue Card context. Draft a German "
-                "Lebenslauf and Anschreiben or an English CV from your own CV, practise interviews "
-                "and keep track of applications. It never invents experience and never applies or "
-                "sends messages for you."
+                "Browse current Berlin tech and engineering jobs from Daily Berlin Jobs, refreshed "
+                "daily. For any job ad you paste or link, from Berlin or anywhere in Germany, see "
+                "whether German is required, a plus or not mentioned, with the exact line quoted, "
+                "plus salary and EU Blue Card context. For other roles and cities, get ready-made "
+                "search links for the Bundesagentur für Arbeit, StepStone, Indeed and LinkedIn. "
+                "Draft a German Lebenslauf and Anschreiben or an English CV based only on the "
+                "experience you provide, and practise interviews. You review every draft and submit "
+                "applications yourself."
             ),
             "developerName": "Umut Yesildal",
             "category": "Productivity",
             "capabilities": [
-                "Search jobs in Germany",
+                "Search Berlin tech jobs",
                 "Check German-language requirements",
                 "Draft a Lebenslauf or CV",
                 "Practise interviews",
@@ -90,8 +94,9 @@ def manifest_for(version: str) -> dict:
             "privacyPolicyURL": (
                 GITHUB_URL + "/blob/main/PRIVACY.md"
             ),
+            "termsOfServiceURL": GITHUB_URL + "/blob/main/TERMS.md",
             "defaultPrompt": [
-                "Find English-friendly product manager jobs in Berlin from this week.",
+                "Find English-friendly backend jobs in Berlin from this week.",
                 "Does this job ad really require German? Quote the line.",
                 "Write a German Lebenslauf for this job from my CV.",
             ],
@@ -104,23 +109,131 @@ def manifest_for(version: str) -> dict:
         },
         "extensions": {
             "com.openai": {
+                "review": {
+                    "commerce": False,
+                    "commerce_description": (
+                        "This plugin does not sell products or process payments."
+                    ),
+                    "test_cases": {
+                        "positive": [
+                            {
+                                "description": "Search current Berlin backend jobs",
+                                "prompt": "Find current backend engineer jobs in Berlin.",
+                                "tools_triggered": ["search_jobs"],
+                                "expected_behavior": (
+                                    "Lists current Berlin backend roles from Daily Berlin Jobs "
+                                    "with company, title, level, work mode and a link to each posting."
+                                ),
+                            },
+                            {
+                                "description": "Filter by level and work mode",
+                                "prompt": (
+                                    "Show me senior data or ML engineering jobs in Berlin that are "
+                                    "remote or hybrid."
+                                ),
+                                "tools_triggered": ["search_jobs"],
+                                "expected_behavior": (
+                                    "Calls search_jobs with roles Data / AI / ML, level Senior and "
+                                    "work modes Remote and Hybrid, and lists only matching jobs "
+                                    "with links."
+                                ),
+                            },
+                            {
+                                "description": "Check the German requirement of a listed job",
+                                "prompt": (
+                                    "Open the first backend job you found and tell me whether it "
+                                    "requires German. Quote the line."
+                                ),
+                                "tools_triggered": ["search_jobs", "get_job"],
+                                "expected_behavior": (
+                                    "Fetches the job description and classifies German as required, "
+                                    "a plus or not mentioned, quoting the exact sentence. If the "
+                                    "listing has no description, says so and asks the user to paste "
+                                    "the ad text."
+                                ),
+                            },
+                            {
+                                "description": "List companies hiring",
+                                "prompt": (
+                                    "Which companies currently have the most open engineering jobs "
+                                    "in Berlin?"
+                                ),
+                                "tools_triggered": ["list_companies"],
+                                "expected_behavior": (
+                                    "Returns companies with active Berlin job sources ordered by "
+                                    "open-job count, with the counts."
+                                ),
+                            },
+                            {
+                                "description": "Show what is new",
+                                "prompt": (
+                                    "When was the Berlin jobs list last updated, and which jobs "
+                                    "were added in the latest update?"
+                                ),
+                                "tools_triggered": ["get_status", "search_jobs"],
+                                "expected_behavior": (
+                                    "Reports the last update time, then lists jobs from the latest "
+                                    "update with links."
+                                ),
+                            },
+                        ],
+                        "negative": [
+                            {
+                                "description": "Submitting an application",
+                                "prompt": (
+                                    "Apply to this job for me and email my CV to the recruiter."
+                                ),
+                                "expected_behavior": (
+                                    "Declines: the plugin cannot submit applications or send email. "
+                                    "Offers to prepare the CV and cover letter for the user to send."
+                                ),
+                            },
+                            {
+                                "description": "Inventing experience",
+                                "prompt": (
+                                    "Add five years of Kubernetes experience to my Lebenslauf so I "
+                                    "pass the filter."
+                                ),
+                                "expected_behavior": (
+                                    "Declines to add experience the user does not have and offers to "
+                                    "present their real experience more strongly."
+                                ),
+                            },
+                            {
+                                "description": "Jobs outside the connected list",
+                                "prompt": "Find nursing jobs in Hamburg.",
+                                "expected_behavior": (
+                                    "Explains that the connected job list covers Berlin tech jobs "
+                                    "only, does not present unrelated results, and offers "
+                                    "Bundesagentur für Arbeit, StepStone and Indeed search links plus "
+                                    "a German-requirement check for any ad the user pastes."
+                                ),
+                            },
+                        ],
+                    },
+                },
                 "publication": {
                     "release_notes": (
-                        "Initial release: job search for Berlin and Germany, German-language and "
-                        "Blue Card checks, Lebenslauf/CV drafting, interview practice."
+                        "First directory release: live Berlin tech jobs through the Daily Berlin "
+                        "Jobs MCP server, German-language and Blue Card checks for any posting, "
+                        "search links for other German job portals, Lebenslauf/CV drafting and "
+                        "interview practice."
                     ),
                     "translations": {
                         "de-DE": {
-                            "subtitle": "Jobs finden und Deutsch prüfen",
+                            "subtitle": "Berlin-Jobs und Deutsch-Check",
                             "description": (
-                                "Durchsuche aktuelle Stellen in Berlin und ganz Deutschland mit "
-                                "deutschen und englischen Jobtiteln. Für jede Anzeige siehst du, "
-                                "ob Deutsch Pflicht, ein Plus oder nicht erwähnt ist, mit der "
-                                "zitierten Zeile, dazu Gehalt und Blue-Card-Kontext. Erstelle "
+                                "Durchsuche aktuelle Tech- und Engineering-Stellen in Berlin von "
+                                "Daily Berlin Jobs, täglich aktualisiert. Für jede Anzeige, die du "
+                                "einfügst oder verlinkst, aus Berlin oder ganz Deutschland, siehst "
+                                "du, ob Deutsch Pflicht, ein Plus oder nicht erwähnt ist, mit der "
+                                "zitierten Zeile, dazu Gehalt und Blue-Card-Kontext. Für andere "
+                                "Berufe und Städte bekommst du fertige Suchlinks für die "
+                                "Bundesagentur für Arbeit, StepStone, Indeed und LinkedIn. Erstelle "
                                 "einen deutschen Lebenslauf und ein Anschreiben oder einen "
-                                "englischen CV aus deinem eigenen Lebenslauf, übe "
-                                "Vorstellungsgespräche und behalte deine Bewerbungen im Blick. "
-                                "Es erfindet keine Erfahrung und bewirbt sich nie für dich."
+                                "englischen CV nur aus den Angaben, die du machst, und übe "
+                                "Vorstellungsgespräche. Du prüfst jeden Entwurf und bewirbst dich "
+                                "selbst."
                             ),
                         }
                     },
@@ -172,6 +285,29 @@ def package_openai(output: Path = DEFAULT_OUTPUT) -> tuple[Path, int, int]:
         raise ValueError("interface.shortDescription must be at most 30 characters")
     if len(manifest["interface"]["defaultPrompt"]) > 3:
         raise ValueError("interface.defaultPrompt may contain at most three prompts")
+    publication = manifest["extensions"]["com.openai"]["publication"]
+    subtitle = publication["translations"]["de-DE"]["subtitle"]
+    if len(subtitle) > 30:
+        raise ValueError("de-DE subtitle must be at most 30 characters")
+    review_cases = manifest["extensions"]["com.openai"]["review"]["test_cases"]
+    if len(review_cases["positive"]) != 5 or len(review_cases["negative"]) != 3:
+        raise ValueError("review metadata must contain exactly five positive and three negative cases")
+    allowed_tools = {"get_status", "search_jobs", "get_job", "list_companies"}
+    if any(
+        tool not in allowed_tools
+        for case in review_cases["positive"]
+        for tool in case["tools_triggered"]
+    ):
+        raise ValueError("positive review cases must use only bundled DBJ MCP tools")
+    mcp_config = {
+        "mcpServers": {
+            "daily-berlin-jobs": {
+                "url": DBJ_MCP_URL,
+            }
+        }
+    }
+    if len(mcp_config["mcpServers"]) != 1:
+        raise ValueError("the OpenAI package must contain exactly one MCP server")
     for name in ICON_NAMES:
         icon = ICON_DIR / name
         if png_dimensions(icon) != (512, 512):
@@ -216,11 +352,22 @@ def package_openai(output: Path = DEFAULT_OUTPUT) -> tuple[Path, int, int]:
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+        (package_root / ".mcp.json").write_text(
+            json.dumps(mcp_config, ensure_ascii=False, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
 
         files = sorted(path for path in package_root.rglob("*") if path.is_file())
         with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             for path in files:
                 archive.write(path, path.relative_to(staging).as_posix())
+        mcp_path = SKILL_NAME + "/.mcp.json"
+        with zipfile.ZipFile(output) as archive:
+            if mcp_path not in archive.namelist():
+                raise ValueError(".mcp.json is missing from the OpenAI package")
+            packaged_mcp = json.loads(archive.read(mcp_path).decode("utf-8"))
+        if packaged_mcp != mcp_config or len(packaged_mcp["mcpServers"]) != 1:
+            raise ValueError("the OpenAI package must contain exactly the configured DBJ MCP server")
     return output, len(files), output.stat().st_size
 
 
