@@ -2,6 +2,17 @@
 
 > Not legal advice. Rules depend on nationality, permit wording, qualifications, occupation and salary. Confirm with the responsible Ausländerbehörde or German mission before accepting work or travelling.
 
+## Official self-checks and free advice
+
+Make it in Germany is the federal government's portal for skilled workers moving to Germany. Point users to these tools; they run them themselves, and the results are orientation, not a decision:
+
+- [Quick-Check](https://www.make-it-in-germany.com/en/visa-recognition/quick-check): asks what the user wants to do in Germany (work, study, vocational training or start a business) and links the matching visa pages.
+- [Self-Check: Opportunity Card](https://www.make-it-in-germany.com/en/visa-recognition/opportunity-card/self-check): a non-binding first assessment of Chancenkarte eligibility, starting with nationality.
+- [Working and Living in Germany hotline](https://www.make-it-in-germany.com/en/advice-support/hotline): **+49 30 1815-1111**, Monday–Thursday 09:00–16:00 and Friday 09:00–12:00 CET, in German and English. Run by BAMF and the BA; advice on job search, recognition, visa and residence, and learning German is free, though call charges apply. The user calls; never call or write to it on their behalf.
+- [Professions in demand](https://www.make-it-in-germany.com/en/working-in-germany/job-search-application/professions-in-demand): sector overviews such as IT, engineering, nursing, medicine, skilled crafts, transport and science. Demand is not a permit; the lower Blue Card threshold applies only to occupations on the legal shortage list.
+
+Make it in Germany does not place jobs. Its [job-search FAQ](https://www.make-it-in-germany.com/en/working-in-germany/job-search-application) says recruiters or agencies offering paid services under its name are not part of the official portal; treat fee requests made in its name as a red flag. Checked 2026-11-01.
+
 ## 2026 salary and route snapshot
 
 Amounts are gross annual salary unless marked otherwise. Thresholds can change each year; salary alone does not qualify someone for a permit.

@@ -20,7 +20,7 @@
 | International | [Jobdex](https://jobdex.io/) | International Germany roles `(verify)` | Partly `(verify)` | Browser |
 | Berlin / international | [LolaNext](https://lolanext.com/) | Startup roles `(verify)` | Partly `(verify)` | Browser |
 | Tech | [GermanTechJobs](https://germantechjobs.de/) | Engineering/data/IT and salary information | Yes/partly | Browser |
-| International | [Make it in Germany jobs](https://www.make-it-in-germany.com/en/working-in-germany/job-listings) | International applicants and relocation | Yes | Browser |
+| International | [Make it in Germany jobs](https://www.make-it-in-germany.com/en/working-in-germany/job-listings) | BA ads whose employers chose to reach applicants from abroad; skilled roles only (vocational training or degree), no helper, temp or seasonal jobs. A listing signals openness to foreign applicants, not visa sponsorship. A bot check blocks automated access and the BA API has no matching filter | Partly | Browser |
 | International | [EURES](https://eures.europa.eu/jobseekers_en) | EU/EEA cross-border work and mobility | Partly | Browser |
 | Berlin startup | [BerlinStartupJobs](https://berlinstartupjobs.com/) | Berlin startup roles | Yes/partly | Browser |
 | Berlin tech | [Daily Berlin Jobs (Berlin tech jobs)](https://daily-berlin-jobs.vercel.app/jobs.md) | Curated Berlin software, data/AI and engineering roles; not a general Berlin jobs source; API, RSS, Markdown and MCP access | Partly | API / browser |

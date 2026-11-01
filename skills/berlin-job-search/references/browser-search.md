@@ -37,6 +37,7 @@ They can adjust filters and review postings directly on LinkedIn.
 - **StepStone:** search at [StepStone](https://www.stepstone.de/). Common path: `/jobs/{role}/in-{city}`. `/jobs/software-engineer/in-berlin?radius=25` is illustrative, not guaranteed. Radius/freshness URL keys `(verify)`; confirm live filter chips.
 - **Indeed Germany:** base `https://de.indeed.com/jobs/`; `q` query, `l` location, `radius` km, `fromage` days. Example: `https://de.indeed.com/jobs?q=Pflegefachkraft&l=Hamburg&radius=25&fromage=7`. Automated check returned HTTP 403; these keys are widely used but current behavior `(verify)` in a human browser; redirects may discard filters.
 - **BA Jobsuche:** open [BA Jobsuche](https://www.arbeitsagentur.de/jobsuche/) and set title/city/date/radius/job type in the UI. Common path: `/jobsuche/suche?was=...&wo=...`; other stable browser parameter names `(verify)`. The script API is in [API sources](api-sources.md).
+- **Make it in Germany:** open the [job listings](https://www.make-it-in-germany.com/en/working-in-germany/job-listings) and filter by occupation field and place in the UI. Ads come from BA Jobsuche, so de-duplicate against BA results by title, employer and location. On 2026-11-01 automated requests got a Radware bot check instead of the page; URL filter keys `(verify)`.
 
 ## Hiring.cafe
 
