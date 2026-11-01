@@ -1166,13 +1166,13 @@ def main() -> int:
     parser.add_argument("--with-description", action="store_true", help=description_help)
     args = parser.parse_args()
     requested = [source.strip().casefold() for source in args.sources.split(",") if source.strip()]
-    # linkedin-guest:start
+    # linkedin-guest:start id=search-warning
     if "linkedin" in requested and "linkedin" not in DISABLED_SOURCES:
         print(
             "LinkedIn guest access is personal-use only, low-volume; automated access violates LinkedIn's User Agreement.",
             file=sys.stderr,
         )
-    # linkedin-guest:end
+    # linkedin-guest:end id=search-warning
     try:
         result = run_search(vars(args))
     except (OSError, ValueError, json.JSONDecodeError) as error:

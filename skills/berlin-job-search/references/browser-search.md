@@ -2,7 +2,7 @@
 
 > The user operates the browser. Portal URLs and filters change; verify visible filters and stop at login, CAPTCHA, 2FA or access denial.
 
-<!-- linkedin-guest:start -->
+<!-- linkedin-guest:start id=browser-linkedin-section -->
 ## LinkedIn Jobs
 
 Base URL: `https://www.linkedin.com/jobs/search/`.
@@ -20,16 +20,7 @@ Base URL: `https://www.linkedin.com/jobs/search/`.
 | `start` | Guest: `0`, `10`, `20`; web UI: 25-card pages `(verify)` | Guest offset is zero-based, 10 cards/page. |
 
 Example: `https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Berlin%2C%20Germany&geoId=103035651&f_TPR=r604800&sortBy=DD`. Use a logged-in browser only if the user chooses to sign in. Guest search is low-volume and subject to the [LinkedIn User Agreement](https://www.linkedin.com/legal/user-agreement); never use internal/Voyager APIs, cookies or login-session scraping. Search-card/detail parameters are in [API sources](api-sources.md).
-<!-- linkedin-guest:end -->
-<!-- linkedin-links:start -->
-<!--
-## LinkedIn Jobs
-
-Give the user a ready-made search link to open themselves, for example:
-[Data analyst jobs in Berlin](https://www.linkedin.com/jobs/search/?keywords=data%20analyst&location=Berlin%2C%20Germany).
-They can adjust filters and review postings directly on LinkedIn.
--->
-<!-- linkedin-links:end -->
+<!-- linkedin-guest:end id=browser-linkedin-section -->
 
 ## XING, StepStone, Indeed and BA
 
@@ -37,6 +28,7 @@ They can adjust filters and review postings directly on LinkedIn.
 - **StepStone:** search at [StepStone](https://www.stepstone.de/). Common path: `/jobs/{role}/in-{city}`. `/jobs/software-engineer/in-berlin?radius=25` is illustrative, not guaranteed. Radius/freshness URL keys `(verify)`; confirm live filter chips.
 - **Indeed Germany:** base `https://de.indeed.com/jobs/`; `q` query, `l` location, `radius` km, `fromage` days. Example: `https://de.indeed.com/jobs?q=Pflegefachkraft&l=Hamburg&radius=25&fromage=7`. Automated check returned HTTP 403; these keys are widely used but current behavior `(verify)` in a human browser; redirects may discard filters.
 - **BA Jobsuche:** open [BA Jobsuche](https://www.arbeitsagentur.de/jobsuche/) and set title/city/date/radius/job type in the UI. Common path: `/jobsuche/suche?was=...&wo=...`; other stable browser parameter names `(verify)`. The script API is in [API sources](api-sources.md).
+- **Make it in Germany:** open the [job listings](https://www.make-it-in-germany.com/en/working-in-germany/job-listings) and filter by occupation field and place in the UI. Ads come from BA Jobsuche, so de-duplicate against BA results by title, employer and location. On 2026-11-01 automated requests got a Radware bot check instead of the page; URL filter keys `(verify)`.
 
 ## Hiring.cafe
 
@@ -67,7 +59,7 @@ Do not use whole-page `get_page_text`; if an in-page JSON fetch appears after a 
 ## Extraction and approval
 
 - Extract only card fields: title, employer, location, date, remote/hybrid label and canonical URL. Prefer DOM attributes, JSON-LD or accessible text from one card.
-<!-- linkedin-guest:start -->
+<!-- linkedin-guest:start id=browser-linkedin-selector -->
 - The LinkedIn public-card selectors are verified but may change; inspect one selected card and revise selectors rather than dumping the page.
 - LinkedIn guest-card selector example (adapt only after checking the live DOM):
 
@@ -86,7 +78,7 @@ Do not use whole-page `get_page_text`; if an in-page JSON fetch appears after a 
   }).filter((card) => card.title && card.url);
 })();
 ```
-<!-- linkedin-guest:end -->
+<!-- linkedin-guest:end id=browser-linkedin-selector -->
 - Keep result sets small: no more than three pages/query, 25 cards/page, and 2–4 seconds between page loads. Read details only for a user-selected shortlist.
 - Confirm freshness, job state and application destination on the employer page. Ads can be stale or personalized.
 - Never bypass challenges, evade blocks, bulk-message, or click Apply/Submit/Send. Saving a job, setting an alert, changing a profile or sharing a CV requires per-action user approval.

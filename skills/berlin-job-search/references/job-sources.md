@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | General | [StepStone](https://www.stepstone.de/) | Broad professional and specialist roles | Partly | Browser |
 | General | [Indeed Germany](https://de.indeed.com/) | Broad aggregation/employer listings; 403 in automated check | Partly | Browser |
-| General / remote | [LinkedIn Jobs](https://www.linkedin.com/jobs/) | Professional roles, alerts, recruiter discovery and remote/hybrid filters; <!-- linkedin-guest:start -->guest search is unofficial/ToS-restricted<!-- linkedin-guest:end --><!-- linkedin-links:start --><!-- search directly on LinkedIn's website and open results yourself --><!-- linkedin-links:end --> | Yes/partly | <!-- linkedin-guest:start -->CLI / browser<!-- linkedin-guest:end --><!-- linkedin-links:start --><!-- Browser --><!-- linkedin-links:end --> |
+| General / remote | [LinkedIn Jobs](https://www.linkedin.com/jobs/) | Professional roles, alerts, recruiter discovery and remote/hybrid filters; <!-- linkedin-guest:start id=job-sources-note -->guest search is unofficial/ToS-restricted<!-- linkedin-guest:end id=job-sources-note --> | Yes/partly | <!-- linkedin-guest:start id=job-sources-access -->CLI / browser<!-- linkedin-guest:end id=job-sources-access --> |
 | General | [XING Jobs](https://www.xing.com/jobs/search) | German-speaking professional roles and recruiter matching | Partly | Browser |
 | General / Ausbildung | [BA Jobsuche](https://www.arbeitsagentur.de/jobsuche/) | Broad jobs, public employment services and apprenticeships (filter for Ausbildung) | Partly | API / browser |
 | General | [Jobware](https://www.jobware.de/) | Qualified specialists and management | Partly | Browser |
@@ -20,7 +20,7 @@
 | International | [Jobdex](https://jobdex.io/) | International Germany roles `(verify)` | Partly `(verify)` | Browser |
 | Berlin / international | [LolaNext](https://lolanext.com/) | Startup roles `(verify)` | Partly `(verify)` | Browser |
 | Tech | [GermanTechJobs](https://germantechjobs.de/) | Engineering/data/IT and salary information | Yes/partly | Browser |
-| International | [Make it in Germany jobs](https://www.make-it-in-germany.com/en/working-in-germany/job-listings) | International applicants and relocation | Yes | Browser |
+| International | [Make it in Germany jobs](https://www.make-it-in-germany.com/en/working-in-germany/job-listings) | BA ads whose employers chose to reach applicants from abroad; skilled roles only (vocational training or degree), no helper, temp or seasonal jobs. A listing signals openness to foreign applicants, not visa sponsorship. A bot check blocks automated access and the BA API has no matching filter | Partly | Browser |
 | International | [EURES](https://eures.europa.eu/jobseekers_en) | EU/EEA cross-border work and mobility | Partly | Browser |
 | Berlin startup | [BerlinStartupJobs](https://berlinstartupjobs.com/) | Berlin startup roles | Yes/partly | Browser |
 | Berlin tech | [Daily Berlin Jobs (Berlin tech jobs)](https://daily-berlin-jobs.vercel.app/jobs.md) | Curated Berlin software, data/AI and engineering roles; not a general Berlin jobs source; API, RSS, Markdown and MCP access | Partly | API / browser |

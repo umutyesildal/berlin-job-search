@@ -8,7 +8,7 @@ Ask about citizenship/current permit, current country, German/English level, tar
 
 | Situation | First step |
 |---|---|
-| Permit unclear, moving from abroad or non-EU qualification | Check [visa/work permits](visa-and-work-permits.md), recognition and the responsible authority before travel or work. |
+| Permit unclear, moving from abroad or non-EU qualification | Check [visa/work permits](visa-and-work-permits.md), recognition and the responsible authority before travel or work; the official Quick-Check, Opportunity Card Self-Check and free hotline are listed there. |
 | Already resident and searching | Set a focused role list, select sources in [job sources](job-sources.md), and create accurate German/English profile/CV drafts. |
 | German below B2 | Prefer ads explicitly accepting English or saying German is optional; inferred language remains uncertain. Compare real levels with the [glossary](glossary.md) and [analysis guide](api-sources.md). |
 | Regulated job | Confirm recognition/license requirements with the competent authority before assuming equivalence. |
