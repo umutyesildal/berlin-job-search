@@ -16,6 +16,7 @@
 | International | [EnglishJobs.de](https://englishjobs.de/) | English-language jobs in Germany | Yes | Browser |
 | International / tech / remote | [Arbeitnow](https://www.arbeitnow.com/) | Startup/tech and remote-friendly listings; public feed | Yes | API |
 | Tech / remote | [Freehire](https://freehire.me/) | Tech-first country/city, seniority and work-mode facets | Partly | Opt-in API |
+| Tech / remote | [EuroJobs.ai](https://eurojobs.ai/) | IT jobs across Germany and Europe from employers' own ATS boards; city, remote, salary and visa facets | Partly | Opt-in API |
 | International | [Hiring.cafe](https://hiringcafe.com/) | Worldwide ATS aggregation with salary, seniority and language filters; live challenge, filters `(verify)` | Partly | Browser |
 | International | [Jobdex](https://jobdex.io/) | International Germany roles `(verify)` | Partly `(verify)` | Browser |
 | Berlin / international | [LolaNext](https://lolanext.com/) | Startup roles `(verify)` | Partly `(verify)` | Browser |

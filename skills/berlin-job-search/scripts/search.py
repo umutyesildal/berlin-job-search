@@ -30,6 +30,7 @@ from _common import (
     request_bytes,
     request_json,
     salary_text,
+    slugify,
     source_date as iso_date,
     warn_data_dir_protection,
     write_output,
@@ -790,6 +791,110 @@ def fetch_freehire(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list
     return jobs, errors
 
 
+EUROJOBS_SINCE_WINDOWS = ((1, "24h"), (3, "3d"), (7, "7d"), (30, "30d"))
+EUROJOBS_DETAIL_LIMIT = 10
+
+
+def eurojobs_salary(salary: Any) -> Optional[str]:
+    if not isinstance(salary, dict):
+        return None
+    return freehire_salary({
+        "salary_min": salary.get("min"),
+        "salary_max": salary.get("max"),
+        "salary_currency": salary.get("currency"),
+        "salary_period": salary.get("period"),
+    })
+
+
+def eurojobs_location_slug(where: Optional[str]) -> Optional[str]:
+    if not where:
+        return None
+    alias = city_alias(where)
+    if alias and alias["key"] == "germany":
+        return None
+    return slugify(canonical_location_name(where))
+
+
+def eurojobs_since(days: int) -> Optional[str]:
+    if days <= 0:
+        return None
+    for limit, window in EUROJOBS_SINCE_WINDOWS:
+        if days <= limit:
+            return window
+    return None
+
+
+def parse_eurojobs(payload: dict[str, Any], include_description: bool = False) -> list[dict[str, Any]]:
+    jobs = []
+    for item in payload.get("data") or []:
+        if not isinstance(item, dict):
+            continue
+        mode = str(item.get("work_mode") or "").casefold()
+        remote = True if mode == "remote" else False if mode in {"hybrid", "onsite", "on-site"} else None
+        employment = str(item.get("employment_type") or "").replace("_", "-")
+        job = make_job(
+            "eurojobs", item.get("title"), item.get("company_name"), item.get("location"),
+            item.get("url"), item.get("posted_at") or item.get("created_at"), remote,
+            employment or None, eurojobs_salary(item.get("salary")),
+            item.get("description_snippet"), include_description=include_description,
+            job_id=item.get("id"),
+        )
+        job.update({
+            "work_mode": mode or None,
+            "skills": [str(skill) for skill in item.get("skills") or [] if skill],
+            "visa_sponsorship": item.get("visa_sponsorship") if isinstance(item.get("visa_sponsorship"), bool) else None,
+        })
+        jobs.append(job)
+    return jobs
+
+
+def fetch_eurojobs(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list[str]]:
+    base_url = "https://eurojobs.ai"
+    params = {"q": args.what, "country": "DE", "per_page": "100"}
+    location = eurojobs_location_slug(args.where)
+    if location:
+        params["location"] = location
+    since = eurojobs_since(args.days)
+    if since:
+        params["since"] = since
+    if args.remote:
+        params["remote"] = "true"
+    jobs: list[dict[str, Any]] = []
+    errors: list[str] = []
+    detail_requests = 0
+    for page in range(1, args.max_pages + 1):
+        url = base_url + "/api/v1/jobs?" + urllib.parse.urlencode(dict(params, page=str(page)))
+        try:
+            payload = request_json(url)
+            if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+                raise RuntimeError("unexpected EuroJobs response format")
+        except Exception as error:
+            errors.append("page {}: {}".format(page, error))
+            break
+        rows = payload["data"]
+        page_jobs = parse_eurojobs(payload, args.with_description)
+        for job in page_jobs:
+            identifier = str(job.get("id") or "")
+            if args.with_description and detail_requests < EUROJOBS_DETAIL_LIMIT and re.fullmatch(r"[0-9]+", identifier):
+                detail_requests += 1
+                try:
+                    detail = request_json(base_url + "/api/v1/jobs/" + identifier)
+                    raw_description = (detail.get("data") or {}).get("description_html")
+                    if isinstance(raw_description, str) and raw_description.strip():
+                        analysis = analyze(raw_description)
+                        job["description"] = plain(raw_description)[:4000]
+                        job["integrity"] = merge_integrity(job.get("integrity"), analysis.get("integrity"))
+                        job["ad_language"] = analysis["ad_language"]
+                        job["german_required"] = analysis["german_required"]
+                except Exception as error:
+                    errors.append("detail {}: {}".format(identifier, error))
+            jobs.append(job)
+        total = (payload.get("meta") or {}).get("total")
+        if not rows or (isinstance(total, int) and page * 100 >= total):
+            break
+    return jobs, errors
+
+
 def fetch_ats(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list[str]]:
     companies = json.loads(Path(args.companies).read_text(encoding="utf-8"))
     errors: list[str] = []
@@ -941,6 +1046,7 @@ SOURCE_FETCHERS = {
     "ats": fetch_ats,
     "linkedin": fetch_linkedin,
     "freehire": fetch_freehire,
+    "eurojobs": fetch_eurojobs,
 }
 SOURCE_FETCHERS = {
     source: fetcher for source, fetcher in SOURCE_FETCHERS.items()
@@ -972,7 +1078,7 @@ def source_status_line(source: str, status: dict[str, Any]) -> str:
     if errors:
         if source == "ats":
             error_label = "company error" if len(errors) == 1 else "company errors"
-        elif source == "freehire":
+        elif source in {"freehire", "eurojobs"}:
             error_label = "query error" if len(errors) == 1 else "query errors"
         else:
             error_label = "partial error" if len(errors) == 1 else "partial errors"
@@ -1133,7 +1239,7 @@ def main() -> int:
     parser.add_argument("--where", default=None, help="City or region")
     parser.add_argument("--radius", type=int, default=25, help="BA search radius in km (default: 25)")
     parser.add_argument("--days", type=int, default=7, help="Posting age window in days (default: 7)")
-    source_choices = ",".join(DEFAULT_SOURCES + ("freehire",))
+    source_choices = ",".join(DEFAULT_SOURCES + ("freehire", "eurojobs"))
     parser.add_argument(
         "--sources",
         default=",".join(DEFAULT_SOURCES),
@@ -1149,7 +1255,7 @@ def main() -> int:
                         help="Keep jobs whose title matches the normalized query phrase")
     parser.add_argument("--limit", type=int, default=100, help="Maximum number of output jobs (default: 100)")
     parser.add_argument("--max-pages", type=int, default=3,
-                        help="Maximum pages for BA, Arbeitnow, and Freehire (default: 3)")
+                        help="Maximum pages for BA, Arbeitnow, Freehire, and EuroJobs (default: 3)")
     if "linkedin" not in DISABLED_SOURCES:
         parser.add_argument("--linkedin-pages", type=int, default=1,
                             help="LinkedIn pages per query, capped at 5 (default: 1)")
