@@ -139,6 +139,9 @@ Other agents use the same skill in plain chat. Some example prompts:
 
 ## Privacy and safety
 
+Narrow a CLI search with `--salary-disclosed` (numeric pay), `--no-german-required` (explicitly
+not required, not unknown), and `--hide-tracked` (already applied to or rejected in your local tracker).
+
 - Privacy policy: [PRIVACY.md](PRIVACY.md).
 - When you work locally, your CV, profile and tracker are stored on your machine in `job-search/`. Inside a Git repository, that folder gets its own `.gitignore`, so `git add .` won't pick it up. Files committed earlier are flagged, not changed. If you share these details with a hosted assistant, its provider processes them under its own privacy policy.
 - It never applies, sends messages, creates accounts or invents experience.

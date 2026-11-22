@@ -126,6 +126,13 @@ These facts change everything:
 4. **Go deeper when useful:** `scripts/linkedin.py search|detail` for LinkedIn filters and full
    text. `references/browser-search.md` for the other portals.
 <!-- linkedin-guest:end id=skill-search-sources -->
+
+   Optional filters for `scripts/search.py`: `--salary-disclosed` keeps results whose source
+   or available description gives a numeric salary; `--no-german-required` keeps only explicit
+   evidence that German isn't required, unlike `--english-only`, which also keeps unknowns.
+   `--hide-tracked` reads the local `job-search/tracker.csv` and hides jobs already applied to
+   or rejected. The tracker is not sent to job sources or changed by the search.
+
 5. **Filter for relevance, then against the profile.** Drop every job whose title isn't the
    target role or a close variant (a recruiter search must not show engineers hired *by* staffing
    firms). Say how many you dropped. Flag agency/Zeitarbeit ads, which are common in BA results;

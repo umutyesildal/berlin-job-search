@@ -35,6 +35,7 @@ from _common import (
     write_output,
 )
 from analyze_jd import analyze, employment_type_from_title
+from tracker import APPLIED_STATUSES, read_rows, tracker_path
 
 DEFAULT_COMPANIES = Path(__file__).resolve().parent.parent / "assets" / "companies.json"
 DISABLED_SOURCES = frozenset(disabled_sources())
@@ -76,7 +77,7 @@ def make_job(
         "url": str(url or ""),
         "posted": iso_date(posted),
         "employment_type": employment_type_from_title(title_text) or plain(employment_type) or None,
-        "salary": salary_text(salary),
+        "salary": salary_text(salary) or (analysis.get("salary") or {}).get("raw"),
         "ad_language": analysis.get("ad_language", "unknown"),
         "german_required": analysis.get("german_required", "unknown"),
         "integrity": analysis.get("integrity", {"ok": True, "issues": []}),
@@ -377,6 +378,23 @@ def dedup_key(job: dict[str, Any]) -> tuple[str, str]:
     return url, text_key
 
 
+def tracker_match_keys(job: dict[str, Any]) -> set[tuple[str, str]]:
+    keys = set()
+    try:
+        url = canonical_url(job.get("url") or "")
+    except ValueError:
+        url = ""
+    if url:
+        keys.add(("url", url))
+    city = re.split(r"[,/|]", job.get("location") or "")[0]
+    identity = tuple(normalized_key(value) for value in (
+        job.get("company") or "", job.get("title") or "", canonical_location_name(city),
+    ))
+    if all(identity):
+        keys.add(("identity", "|".join(identity)))
+    return keys
+
+
 def deduplicate_jobs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     parents = list(range(len(jobs)))
 
@@ -479,6 +497,10 @@ def filter_jobs(jobs: list[dict[str, Any]], args: argparse.Namespace) -> list[di
         if args.remote and job.get("remote") is not True:
             continue
         if args.english_only and job.get("german_required") == "required":
+            continue
+        if getattr(args, "no_german_required", False) and job.get("german_required") != "not_required":
+            continue
+        if getattr(args, "salary_disclosed", False) and not job.get("salary"):
             continue
         if cutoff and job.get("posted") and job.get("source") != "dailyberlinjobs":
             try:
@@ -1011,6 +1033,9 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
         "companies": str(DEFAULT_COMPANIES),
         "remote": False,
         "english_only": False,
+        "no_german_required": False,
+        "salary_disclosed": False,
+        "hide_tracked": False,
         "limit": 100,
         "max_pages": 3,
         "linkedin_pages": 1,
@@ -1048,6 +1073,12 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("unsupported source(s): {}".format(", ".join(unknown)))
     if (args.dbj_role or args.dbj_level) and "dailyberlinjobs" not in requested:
         raise ValueError("--dbj-role and --dbj-level require --sources dailyberlinjobs")
+
+    blocked = set()
+    if args.hide_tracked:
+        for row in read_rows(tracker_path()):
+            if row["status"].strip().casefold() in APPLIED_STATUSES or row["applied_date"].strip():
+                blocked.update(tracker_match_keys(row))
 
     args.dbj_skipped = False
     args.dbj_status_payload = None
@@ -1107,6 +1138,11 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
         matched_jobs = [job for job in all_jobs if title_matches(args.what, job.get("title"))]
         title_filtered = len(all_jobs) - len(matched_jobs)
         all_jobs = matched_jobs
+    tracker_filtered = 0
+    if blocked:
+        eligible = [job for job in all_jobs if blocked.isdisjoint(tracker_match_keys(job))]
+        tracker_filtered = len(all_jobs) - len(eligible)
+        all_jobs = eligible
     for job in all_jobs:
         job.pop("_tags", None)
     unique = deduplicate_jobs(all_jobs)
@@ -1116,6 +1152,8 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
         "query": {
             "what": args.what, "where": args.where, "radius": args.radius, "days": args.days,
             "sources": requested, "remote": args.remote, "english_only": args.english_only,
+            "no_german_required": args.no_german_required, "salary_disclosed": args.salary_disclosed,
+            "hide_tracked": args.hide_tracked,
             "limit": args.limit, "max_pages": args.max_pages, "linkedin_pages": args.linkedin_pages,
             "dbj_role": args.dbj_role, "dbj_level": args.dbj_level, "only_new": args.only_new,
         },
@@ -1124,6 +1162,8 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
     }
     if args.title_match:
         meta["title_filtered"] = title_filtered
+    if args.hide_tracked:
+        meta["tracker_filtered"] = tracker_filtered
     return {"meta": meta, "jobs": unique}
 
 
@@ -1145,6 +1185,12 @@ def main() -> int:
                         help="ATS company catalog JSON (default: ../assets/companies.json)")
     parser.add_argument("--remote", action="store_true", help="Keep explicitly remote postings")
     parser.add_argument("--english-only", action="store_true", help="Drop ads where German is required")
+    parser.add_argument("--no-german-required", action="store_true",
+                        help="Keep only ads that explicitly say German is not required")
+    parser.add_argument("--salary-disclosed", action="store_true",
+                        help="Keep only ads with a disclosed numeric salary")
+    parser.add_argument("--hide-tracked", action="store_true",
+                        help="Hide jobs already applied to or rejected in the local tracker.csv")
     parser.add_argument("--title-match", action="store_true",
                         help="Keep jobs whose title matches the normalized query phrase")
     parser.add_argument("--limit", type=int, default=100, help="Maximum number of output jobs (default: 100)")

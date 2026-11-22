@@ -129,6 +129,10 @@ Andere Agenten nutzen denselben Skill im normalen Chat. Beispiele für Prompts:
 
 ## Datenschutz und Sicherheit
 
+Für die CLI-Suche gibt es `--salary-disclosed` (Gehalt mit Betrag), `--no-german-required`
+(Deutsch ausdrücklich nicht erforderlich, nicht unbekannt) und `--hide-tracked` (bereits
+beworbene oder abgelehnte Stellen aus der lokalen Bewerbungsübersicht ausblenden).
+
 - Datenschutzerklärung: [PRIVACY.md](PRIVACY.md).
 - Bei lokaler Nutzung werden dein CV, dein Profil und dein Tracker auf deinem Rechner in `job-search/` gespeichert. Innerhalb eines Git-Repositories erhält dieser Ordner eine eigene `.gitignore`, sodass `git add .` ihn nicht hinzufügt. Bereits committete Dateien werden gemeldet, aber nicht verändert. Wenn du diese Angaben mit einem Online-Assistenten teilst, verarbeitet dessen Anbieter sie nach seiner eigenen Datenschutzerklärung.
 - Der Skill bewirbt sich nie, versendet keine Nachrichten, erstellt keine Konten und erfindet keine Berufserfahrung.
