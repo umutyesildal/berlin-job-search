@@ -95,13 +95,51 @@ class AnalyzeJobAdTests(unittest.TestCase):
                 self.assertEqual(salary["currency"], "EUR")
 
     def test_visa_salary_threshold_boundaries(self):
-        regular = analyze("Salary: 50,700 EUR per year")["visa_salary_check"]
-        self.assertTrue(regular["blue_card_regular"])
-        shortage = analyze("Gehalt 45.934,20 € jährlich")["visa_salary_check"]
+        regular = analyze("Salary: 50,700 EUR gross per year")
+        self.assertEqual(regular["visa_salary_reference_year"], 2026)
+        self.assertTrue(regular["visa_salary_check"]["blue_card_regular"])
+        shortage = analyze("Gehalt 45.934,20 € brutto jährlich")["visa_salary_check"]
         self.assertTrue(shortage["blue_card_shortage_or_graduate"])
-        below = analyze("Salary: 45,934 EUR per year")["visa_salary_check"]
+        below = analyze("Salary: 45,934 EUR gross per year")["visa_salary_check"]
         self.assertFalse(below["blue_card_shortage_or_graduate"])
         self.assertEqual(THRESHOLDS_2026["blue_card_regular"], 50700)
+
+    def test_visa_salary_uses_stated_hours_for_gross_hourly_pay(self):
+        part_time = analyze("Berlin Data Assistant (20 hours per week). Salary: €25 gross per hour.")
+        self.assertEqual(part_time["salary"]["annual_min"], 26000)
+        self.assertFalse(part_time["visa_salary_check"]["blue_card_regular"])
+
+        full_time = analyze("40 Wochenstunden, Stundenlohn: 25 €/Stunde brutto.")
+        self.assertEqual(full_time["salary"]["annual_min"], 52000)
+        self.assertTrue(full_time["visa_salary_check"]["blue_card_regular"])
+
+    def test_visa_salary_annualizes_gross_monthly_pay(self):
+        result = analyze("Monatsgehalt: 4.225 € brutto.")
+        self.assertEqual(result["salary"]["annual_min"], 50700)
+        self.assertTrue(result["visa_salary_check"]["blue_card_regular"])
+
+    def test_visa_salary_stays_unknown_when_the_gross_annual_basis_is_unclear(self):
+        for text in (
+            "Salary: 50,700 EUR per year",
+            "Gehalt 45.934,20 € jährlich",
+            "Salary: 45,934 EUR per year",
+            "Salary: €5,000 net per month.",
+            "Salary: €60,000 gross.",
+            "Salary: €25 gross per hour.",
+            "Salary: €25 gross per hour. Up to 40 hours per week.",
+            "Salary: €25 gross per hour. 20–40 hours per week.",
+            "Salary: €25 gross per hour. 20 hours per week or 40 hours per week.",
+            "Salary: €75,000 gross annually on a full-time equivalent basis.",
+            "Salary: €75,000 gross per year (full-time). This role is part-time.",
+            "50.700 € brutto jährlich bei Vollzeit.",
+            "Total compensation: €75,000 gross per year including bonus.",
+            "Annual gross salary up to €75,000.",
+        ):
+            with self.subTest(text=text):
+                result = analyze(text)
+                self.assertIsNotNone(result["salary"])
+                self.assertIsNone(result["visa_salary_check"])
+                self.assertEqual(result["visa_salary_reference_year"], 2026)
 
     def test_no_salary_has_null_visa_check(self):
         self.assertIsNone(analyze("We offer flexible hours.")["visa_salary_check"])

@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 from _common import json_text, strip_html, write_output
 
+VISA_SALARY_REFERENCE_YEAR = 2026
 # 2026 thresholds: https://www.make-it-in-germany.com/fileadmin/1_Rebrush_2022/a_Fachkraefte/PDF-Dateien/3_Visum_u_Aufenthalt/Visagrafik_EN/Lebensunterhaltssicherung_Uebersicht_EN.pdf
 # https://podgorica.diplo.de/me-de/service/viseinreise/2762120-2762120
 THRESHOLDS_2026 = {
@@ -153,6 +154,25 @@ NON_SALARY_ITEM = re.compile(
     r"|\b\d+\s*%|%\s*\d+",
     re.I,
 )
+PAY_PERIODS = {
+    "hour": re.compile(r"\b(?:per hour|an hour|hourly|stunde|stundenlohn|pro stunde)\b|/\s*(?:h|hour|stunde)\b"),
+    "month": re.compile(r"\b(?:per month|monthly|monatlich|pro monat|im monat|monatsgehalt)\b|/\s*(?:month|monat)\b"),
+    "year": re.compile(r"\b(?:per year|a year|annual(?:ly)?|yearly|jährlich|jaehrlich|jahr|jahresgehalt)\b|/\s*(?:year|jahr)\b"),
+}
+WEEKLY_HOURS = re.compile(
+    r"(?<![\d.,])\b(?P<qualifier>(?:up to|bis zu|at least|mindestens|max(?:imal)?\.?|ca\.?|"
+    r"around|about|approx(?:imately)?\.?)\s+)?(?P<hours>\d+(?:[.,]\d+)?)"
+    r"(?P<range>\s*(?:[-–—/]|to|bis|or|oder)\s*\d+(?:[.,]\d+)?)?\s*"
+    r"(?:(?:hours?|hrs?|h|stunden)(?:\s+(?:per|a|pro|je)\s+|\s*/\s*|\s+)(?:week|woche)|wochenstunden)\b"
+)
+UNCERTAIN_PAY_BASIS = re.compile(
+    r"\b(?:net(?:to)?|after tax(?:es)?|nach steuern|fte|full[- ]time equivalent|full[- ]time basis|"
+    r"based on full[- ]time|vollzeitbasis|bei vollzeit|anteilig|pro[- ]rata|"
+    r"on[- ]target earnings|ote|total compensation|gesamtvergütung|bonus|boni|commission|provision|"
+    r"up to|bis zu)\b"
+)
+FULL_TIME = re.compile(r"\b(?:full[- ]time|vollzeit)\b")
+PART_TIME = re.compile(r"\b(?:part[- ]time|teilzeit)\b", re.I)
 INSTRUCTION_PATTERNS = (
     re.compile(r"\bignore\s+(?:(?:all|any)\s+)?(?:(?:previous|prior|the above)\s+)?instructions\b", re.I),
     re.compile(
@@ -543,8 +563,11 @@ def _nearest_context_distance(pattern: re.Pattern[str], text: str, start: int, e
     return min(distances) if distances else None
 
 
-def salary_of(text: str) -> Optional[dict[str, Any]]:
+def _salary_details(text: str) -> tuple[Optional[dict[str, Any]], Optional[float]]:
+    hours = list(WEEKLY_HOURS.finditer(text.casefold()))
     for start, end, left_text, right_text, raw in _salary_candidates(text):
+        if any(match.start() <= start < match.end() for match in hours):
+            continue
         left = parse_amount(left_text)
         right = parse_amount(right_text)
         if left is None or right is None:
@@ -566,11 +589,17 @@ def salary_of(text: str) -> Optional[dict[str, Any]]:
         if not (has_pay_context or has_k_suffix or (has_currency and maximum >= 1000)):
             continue
 
-        if re.search(r"\b(?:per hour|an hour|hourly|stunde|stundenlohn|/h|pro stunde)\b", context):
+        periods = [period for period, pattern in PAY_PERIODS.items() if pattern.search(context)]
+        weekly_hours = None
+        if "hour" in periods:
             period = "hour"
-            factor = 2080
+            if hours and not any(match["qualifier"] or match["range"] for match in hours):
+                values = {float(match["hours"].replace(",", ".")) for match in hours}
+                if len(values) == 1 and 0 < min(values) <= 168:
+                    weekly_hours = values.pop()
+            factor = 2080 if weekly_hours is None else weekly_hours * 52
             lower_bound, upper_bound = 8, 300
-        elif re.search(r"\b(?:per month|monthly|monatlich|pro monat|im monat)\b", context):
+        elif "month" in periods:
             period = "month"
             factor = 12
             lower_bound, upper_bound = 400, 50000
@@ -580,7 +609,7 @@ def salary_of(text: str) -> Optional[dict[str, Any]]:
             lower_bound, upper_bound = 6000, 1000000
         if minimum < lower_bound or maximum > upper_bound:
             continue
-        return {
+        salary = {
             "min": minimum,
             "max": maximum,
             "currency": "EUR",
@@ -589,7 +618,23 @@ def salary_of(text: str) -> Optional[dict[str, Any]]:
             "annual_max": maximum * factor,
             "raw": raw.strip(),
         }
-    return None
+        annual_gross = None
+        if (
+            has_currency
+            and len(periods) == 1
+            and re.search(r"\b(?:gross|brutto)\b", context)
+            and not UNCERTAIN_PAY_BASIS.search(context)
+            and not (FULL_TIME.search(context) and PART_TIME.search(text))
+            and (period != "hour" or weekly_hours is not None)
+        ):
+            annual_gross = salary["annual_min"]
+        return salary, annual_gross
+    return None, None
+
+
+def salary_of(text: str) -> Optional[dict[str, Any]]:
+    salary, _ = _salary_details(text)
+    return salary
 
 
 def remote_mode(text: str) -> str:
@@ -718,11 +763,10 @@ def analyze(
     text = clean_text(text)
     language = language_of(text)
     german, evidence, inferred = german_requirement(text, language, title)
-    salary = salary_of(text)
+    salary, annual_gross = _salary_details(text)
     visa_check = None
-    if salary is not None:
-        annual = salary["annual_min"]
-        visa_check = {name: annual >= amount for name, amount in THRESHOLDS_2026.items()}
+    if annual_gross is not None:
+        visa_check = {name: annual_gross >= amount for name, amount in THRESHOLDS_2026.items()}
     lower = text.casefold()
     agency_matches = []
     for label, value in (
@@ -758,6 +802,7 @@ def analyze(
         )),
         "salary": salary,
         "visa_salary_check": visa_check,
+        "visa_salary_reference_year": VISA_SALARY_REFERENCE_YEAR,
         "remote_mode": remote_mode(text),
         "employment_type": employment_types(text, title),
         "seniority": seniority(text, title),
