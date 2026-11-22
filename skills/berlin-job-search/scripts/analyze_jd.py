@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import html
 import re
 import sys
@@ -9,16 +10,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from _common import json_text, strip_html, write_output
-
-VISA_SALARY_REFERENCE_YEAR = 2026
-# 2026 thresholds: https://www.make-it-in-germany.com/fileadmin/1_Rebrush_2022/a_Fachkraefte/PDF-Dateien/3_Visum_u_Aufenthalt/Visagrafik_EN/Lebensunterhaltssicherung_Uebersicht_EN.pdf
-# https://podgorica.diplo.de/me-de/service/viseinreise/2762120-2762120
-THRESHOLDS_2026 = {
-    "blue_card_regular": 50700,
-    "blue_card_shortage_or_graduate": 45934.20,
-    "it_specialist_no_degree_6_beschv": 45630,
-    "age_45_plus_min": 55770,
-}
+from _thresholds import VISA_KEYS, official_amounts
 
 GERMAN_STOPWORDS = set(
     "aber als am an auch auf aus bei das dass dem den der des die doch durch ein eine "
@@ -758,15 +750,20 @@ def analyze(
     text: str,
     title: Optional[str] = None,
     employer_name: Optional[str] = None,
+    *,
+    as_of: Optional[dt.date] = None,
 ) -> dict[str, Any]:
     integrity = integrity_of(text)
     text = clean_text(text)
     language = language_of(text)
     german, evidence, inferred = german_requirement(text, language, title)
     salary, annual_gross = _salary_details(text)
+    reference_date = as_of or dt.date.today()
+    amounts = official_amounts(reference_date)
+    has_visa_amounts = all(key in amounts for key in VISA_KEYS)
     visa_check = None
-    if annual_gross is not None:
-        visa_check = {name: annual_gross >= amount for name, amount in THRESHOLDS_2026.items()}
+    if annual_gross is not None and has_visa_amounts:
+        visa_check = {key: annual_gross >= amounts[key] for key in VISA_KEYS}
     lower = text.casefold()
     agency_matches = []
     for label, value in (
@@ -802,7 +799,7 @@ def analyze(
         )),
         "salary": salary,
         "visa_salary_check": visa_check,
-        "visa_salary_reference_year": VISA_SALARY_REFERENCE_YEAR,
+        "visa_salary_reference_year": reference_date.year if has_visa_amounts else None,
         "remote_mode": remote_mode(text),
         "employment_type": employment_types(text, title),
         "seniority": seniority(text, title),

@@ -1,11 +1,16 @@
 import sys
 import unittest
+from datetime import date
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "berlin-job-search" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from analyze_jd import THRESHOLDS_2026, analyze, salary_of
+from _thresholds import VISA_KEYS, official_amounts
+from analyze_jd import analyze, salary_of
+
+REFERENCE_DATE = date(2026, 11, 22)
 
 
 class AnalyzeJobAdTests(unittest.TestCase):
@@ -95,26 +100,36 @@ class AnalyzeJobAdTests(unittest.TestCase):
                 self.assertEqual(salary["currency"], "EUR")
 
     def test_visa_salary_threshold_boundaries(self):
-        regular = analyze("Salary: 50,700 EUR gross per year")
+        regular = analyze("Salary: 50,700 EUR gross per year", as_of=REFERENCE_DATE)
         self.assertEqual(regular["visa_salary_reference_year"], 2026)
         self.assertTrue(regular["visa_salary_check"]["blue_card_regular"])
-        shortage = analyze("Gehalt 45.934,20 € brutto jährlich")["visa_salary_check"]
+        shortage = analyze("Gehalt 45.934,20 € brutto jährlich", as_of=REFERENCE_DATE)["visa_salary_check"]
         self.assertTrue(shortage["blue_card_shortage_or_graduate"])
-        below = analyze("Salary: 45,934 EUR gross per year")["visa_salary_check"]
+        below = analyze("Salary: 45,934 EUR gross per year", as_of=REFERENCE_DATE)["visa_salary_check"]
         self.assertFalse(below["blue_card_shortage_or_graduate"])
-        self.assertEqual(THRESHOLDS_2026["blue_card_regular"], 50700)
+        self.assertEqual(official_amounts(REFERENCE_DATE)["blue_card_regular"], 50700)
+
+    def test_calculated_figures_do_not_enable_a_visa_salary_check(self):
+        planning = [{"key": key, "effective_from": "2099-01-01", "status": "calculated",
+                     "amount": 55000} for key in VISA_KEYS]
+        with patch("_thresholds.load_thresholds", return_value=planning):
+            result = analyze("Salary: 70,000 EUR gross per year", as_of=date(2099, 1, 1))
+        self.assertIsNone(result["visa_salary_reference_year"])
+        self.assertIsNone(result["visa_salary_check"])
+        self.assertEqual(result["salary"]["annual_min"], 70000)
 
     def test_visa_salary_uses_stated_hours_for_gross_hourly_pay(self):
-        part_time = analyze("Berlin Data Assistant (20 hours per week). Salary: €25 gross per hour.")
+        part_time = analyze("Berlin Data Assistant (20 hours per week). Salary: €25 gross per hour.",
+                            as_of=REFERENCE_DATE)
         self.assertEqual(part_time["salary"]["annual_min"], 26000)
         self.assertFalse(part_time["visa_salary_check"]["blue_card_regular"])
 
-        full_time = analyze("40 Wochenstunden, Stundenlohn: 25 €/Stunde brutto.")
+        full_time = analyze("40 Wochenstunden, Stundenlohn: 25 €/Stunde brutto.", as_of=REFERENCE_DATE)
         self.assertEqual(full_time["salary"]["annual_min"], 52000)
         self.assertTrue(full_time["visa_salary_check"]["blue_card_regular"])
 
     def test_visa_salary_annualizes_gross_monthly_pay(self):
-        result = analyze("Monatsgehalt: 4.225 € brutto.")
+        result = analyze("Monatsgehalt: 4.225 € brutto.", as_of=REFERENCE_DATE)
         self.assertEqual(result["salary"]["annual_min"], 50700)
         self.assertTrue(result["visa_salary_check"]["blue_card_regular"])
 
@@ -136,7 +151,7 @@ class AnalyzeJobAdTests(unittest.TestCase):
             "Annual gross salary up to €75,000.",
         ):
             with self.subTest(text=text):
-                result = analyze(text)
+                result = analyze(text, as_of=REFERENCE_DATE)
                 self.assertIsNotNone(result["salary"])
                 self.assertIsNone(result["visa_salary_check"])
                 self.assertEqual(result["visa_salary_reference_year"], 2026)

@@ -96,13 +96,22 @@ class LinkedInParsingTests(unittest.TestCase):
         self.assertEqual(params[0]["location"], ["Munich, Germany"])
         self.assertEqual(params[0]["geoId"], ["100495942"])
 
-    def test_unverified_city_has_no_invented_linkedin_geo_id(self):
-        url = build_search_url(
-            "Nuremberg", "Product Manager", 14, None, None, None, None, False, None, 1,
-        )
-        params = parse_qs(urlsplit(url).query)
-        self.assertEqual(params["location"], ["Nuremberg, Germany"])
-        self.assertNotIn("geoId", params)
+    def test_verified_city_aliases_use_linkedin_geo_ids(self):
+        for city, canonical, geo_id in (
+            ("Nürnberg", "Nuremberg", "101768819"),
+            ("Duesseldorf", "Düsseldorf", "104008204"),
+            ("Stuttgart", "Stuttgart", "102473731"),
+            ("Leipzig", "Leipzig", "106955537"),
+            ("Dresden", "Dresden", "104815888"),
+            ("Hannover", "Hanover", "100423791"),
+        ):
+            with self.subTest(city=city):
+                url = build_search_url(
+                    city, "Product Manager", 14, None, None, None, None, False, None, 1,
+                )
+                params = parse_qs(urlsplit(url).query)
+                self.assertEqual(params["location"], [canonical + ", Germany"])
+                self.assertEqual(params["geoId"], [geo_id])
 
     def test_unknown_city_location_passes_through_to_linkedin(self):
         url = build_search_url(

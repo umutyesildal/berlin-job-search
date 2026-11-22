@@ -53,10 +53,9 @@ Notes on dimensions:
   Kenntnisse" ≈ B1–B2, "sehr gute / fließend" ≈ C1, "verhandlungssicher / muttersprachlich" ≈
   C1–C2. A German ad with no stated requirement (`inferred: true`) ≈ B2. One level short → 2,
   two or more → 1 (and check the language gate).
-- **Blue Card thresholds 2026:** €50,700 regular. €45,934.20 for shortage occupations
-  (including IT and STEM academic professionals, see `visa-and-work-permits.md`) and for
-  graduates within 3 years of their degree. Use the threshold that applies to this user. For
-  first-time permits at age 45+, check €55,770.
+- **Blue Card and age 45+ thresholds:** Use the applicable, officially effective figure in the
+  [dated threshold table](thresholds.md). The lower Blue Card threshold applies to eligible
+  shortage occupations and recent graduates; see [visa and work permits](visa-and-work-permits.md).
 - **Compensation context.** Count a 13th salary and fixed bonuses if stated. Don't penalize a
   missing salary below 3: most German postings omit it.
 

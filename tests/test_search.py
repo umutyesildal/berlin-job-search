@@ -578,6 +578,54 @@ class CitySearchTests(unittest.TestCase):
         self.assertFalse(is_daily_berlin_jobs_location("München"))
 
 
+class SearchFilterTests(unittest.TestCase):
+    def test_cli_requires_disclosed_salary_and_explicit_no_german_requirement(self):
+        def posting(name, description):
+            return search.make_job("ats", "Recruiter", name, "Berlin",
+                                   "https://example.test/" + name, description=description)
+
+        jobs = [
+            posting("Eligible", "German is not required. Salary: €55,000 gross per year."),
+            posting("UnknownLanguage", "Salary: €55,000 gross per year."),
+            posting("UnknownPay", "German is not required. Competitive salary."),
+            posting("Required", "Fluent German is required. Salary: €55,000 gross per year."),
+        ]
+        args = ["search.py", "--what", "Recruiter", "--sources", "ats", "--days", "0",
+                "--salary-disclosed", "--no-german-required", "--format", "json"]
+        out = io.StringIO()
+        with patch.dict(SOURCE_FETCHERS, {"ats": lambda _: (jobs, [])}), patch("sys.argv", args):
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(search.main(), 0)
+        result = json.loads(out.getvalue())
+        self.assertEqual([job["company"] for job in result["jobs"]], ["Eligible"])
+        self.assertIn("55,000", result["jobs"][0]["salary"])
+
+    def test_hide_tracked_matches_canonical_urls_and_city_aliases_without_writing(self):
+        def posting(name, slug):
+            return search.make_job("ats", "Recruiter", name, "Munich", "https://example.test/" + slug)
+
+        jobs = [posting("Applied", "1"), posting("Rejected", "2"), posting("Withdrawn", "3"),
+                posting("Saved", "4")]
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "tracker.csv"
+            fixture = (
+                "company,title,location,url,status,applied_date\n"
+                "Applied,Original Title,,https://example.test/1?utm_source=x,applied,\n"
+                "Rejected,Recruiter,München,https://other.test/2,rejected,\n"
+                "Withdrawn,Recruiter,Munich,https://other.test/3,withdrawn,2026-10-01\n"
+                "Saved,Recruiter,Munich,https://example.test/4,saved,\n"
+            )
+            path.write_text(fixture, encoding="utf-8")
+            with patch.dict(SOURCE_FETCHERS, {"ats": lambda _: (jobs, [])}):
+                with patch.dict("os.environ", {"GJS_DATA_DIR": root}):
+                    params = {"what": "Recruiter", "sources": "ats", "days": 0}
+                    self.assertEqual(len(run_search(params)["jobs"]), 4)
+                    result = run_search({**params, "hide_tracked": True, "limit": 1})
+            self.assertEqual(result["meta"]["tracker_filtered"], 3)
+            self.assertEqual([job["company"] for job in result["jobs"]], ["Saved"])
+            self.assertEqual(path.read_text(encoding="utf-8"), fixture)
+
+
 class TitleMatchTests(unittest.TestCase):
     def test_title_matches_expected_phrases(self):
         cases = (
