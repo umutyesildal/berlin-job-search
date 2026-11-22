@@ -1,7 +1,7 @@
 {
   "name": "berlin-job-search",
   "displayName": "Berlin Job Search",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Job-search coach for Berlin and the rest of Germany: search live postings, check German-language and Blue Card salary requirements, write a German Lebenslauf or English CV, practise interviews and track applications.",
   "author": {
     "name": "Umut Yesildal",

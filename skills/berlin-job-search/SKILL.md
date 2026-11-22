@@ -5,7 +5,7 @@ license: MIT
 compatibility: Scripts need Python 3.9+ (standard library only) and internet access. Portal recipes optionally use a browser automation tool.
 metadata:
   author: umutyesildal
-  version: "0.1.3"
+  version: "0.2.0"
   data-as-of: "2026-11"
 ---
 
@@ -218,9 +218,10 @@ recognition (`references/visa-and-work-permits.md`).
 - `unknown` on an English ad: likely English-friendly. Check the requirements before saying "no
   German needed".
 - `visa_salary_check` is a salary comparison only, not a permit decision. Read
-  `visa_salary_reference_year` and verify the threshold for the relevant year. If the check is
-  `null`, ask for the actual gross pay and, for hourly pay, contracted weekly hours. Market
-  estimates from `references/salary-and-compensation.md` cannot fill in missing offer terms.
+  `visa_salary_reference_year` and verify the figure in `references/thresholds.md`. A null year
+  means official figures for that year are missing. If the year is set but the check is null,
+  ask for the actual gross pay and, for hourly pay, contracted weekly hours. Market estimates
+  cannot fill in missing offer terms.
 - An `agency_or_temp` flag is not disqualifying, but the user should know the real employer.
 - Postings close fast. Check the link before drafting an application.
 - To add employers to `assets/companies.json`, see `references/api-sources.md` for how to find

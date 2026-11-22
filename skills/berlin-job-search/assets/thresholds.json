@@ -1,0 +1,123 @@
+[
+  {
+    "key": "blue_card_regular",
+    "label": "EU Blue Card (regular)",
+    "unit": "gross/year",
+    "amount": 50700,
+    "effective_from": "2026-01-01",
+    "status": "official",
+    "source_url": "https://www.arbeitsagentur.de/vor-ort/zav/working-and-living-in-germany/iss-en/issue-03-2026/blue-card"
+  },
+  {
+    "key": "blue_card_shortage_or_graduate",
+    "label": "EU Blue Card (lower threshold)",
+    "unit": "gross/year",
+    "amount": 45934.2,
+    "effective_from": "2026-01-01",
+    "status": "official",
+    "source_url": "https://www.arbeitsagentur.de/vor-ort/zav/working-and-living-in-germany/iss-en/issue-03-2026/blue-card"
+  },
+  {
+    "key": "it_specialist_no_degree_6_beschv",
+    "label": "§6 BeschV (including IT without a formal qualification)",
+    "unit": "gross/year",
+    "amount": 45630,
+    "effective_from": "2026-01-01",
+    "status": "official",
+    "source_url": "https://www.make-it-in-germany.com/fileadmin/1_Rebrush_2022/a_Fachkraefte/PDF-Dateien/3_Visum_u_Aufenthalt/Visagrafik_EN/Lebensunterhaltssicherung_Uebersicht_EN.pdf"
+  },
+  {
+    "key": "age_45_plus_min",
+    "label": "First skilled-worker title, age 45+ (salary route)",
+    "unit": "gross/year",
+    "amount": 55770,
+    "effective_from": "2026-01-01",
+    "status": "official",
+    "source_url": "https://www.make-it-in-germany.com/fileadmin/1_Rebrush_2022/a_Fachkraefte/PDF-Dateien/3_Visum_u_Aufenthalt/Visagrafik_EN/Lebensunterhaltssicherung_Uebersicht_EN.pdf"
+  },
+  {
+    "key": "chancenkarte",
+    "label": "Chancenkarte living funds",
+    "unit": "net/month",
+    "amount": 1091,
+    "effective_from": "2026-01-01",
+    "status": "official",
+    "source_url": "https://uk.diplo.de/uk-en/02/visa/chancenkarte-2659588"
+  },
+  {
+    "key": "minimum_wage",
+    "label": "Statutory minimum wage",
+    "unit": "gross/hour",
+    "amount": 13.9,
+    "effective_from": "2026-01-01",
+    "status": "official",
+    "source_url": "https://www.gesetze-im-internet.de/milov5/__1.html"
+  },
+  {
+    "key": "minijob",
+    "label": "Regular Minijob limit",
+    "unit": "gross/month",
+    "amount": 603,
+    "effective_from": "2026-01-01",
+    "status": "official",
+    "source_url": "https://www.arbeitsagentur.de/datei/weisung-202604002_ba056519.pdf"
+  },
+  {
+    "key": "blue_card_regular",
+    "label": "EU Blue Card (regular)",
+    "unit": "gross/year",
+    "amount": 53100,
+    "effective_from": "2027-01-01",
+    "status": "calculated",
+    "source_url": "https://www.bundesrat.de/SharedDocs/beratungsvorgaenge/2026/0501-0600/0576-26.html",
+    "basis": "50% of the annual pension ceiling (§18g AufenthG)"
+  },
+  {
+    "key": "blue_card_shortage_or_graduate",
+    "label": "EU Blue Card (lower threshold)",
+    "unit": "gross/year",
+    "amount": 48108.6,
+    "effective_from": "2027-01-01",
+    "status": "calculated",
+    "source_url": "https://www.bundesrat.de/SharedDocs/beratungsvorgaenge/2026/0501-0600/0576-26.html",
+    "basis": "45.3% of the annual pension ceiling (§18g AufenthG)"
+  },
+  {
+    "key": "it_specialist_no_degree_6_beschv",
+    "label": "§6 BeschV (including IT without a formal qualification)",
+    "unit": "gross/year",
+    "amount": 47790,
+    "effective_from": "2027-01-01",
+    "status": "calculated",
+    "source_url": "https://www.bundesrat.de/SharedDocs/beratungsvorgaenge/2026/0501-0600/0576-26.html",
+    "basis": "45% of the annual pension ceiling (§6 BeschV)"
+  },
+  {
+    "key": "age_45_plus_min",
+    "label": "First skilled-worker title, age 45+ (salary route)",
+    "unit": "gross/year",
+    "amount": 58410,
+    "effective_from": "2027-01-01",
+    "status": "calculated",
+    "source_url": "https://www.bundesrat.de/SharedDocs/beratungsvorgaenge/2026/0501-0600/0576-26.html",
+    "basis": "55% of the annual pension ceiling (§18 AufenthG)"
+  },
+  {
+    "key": "minimum_wage",
+    "label": "Statutory minimum wage",
+    "unit": "gross/hour",
+    "amount": 14.6,
+    "effective_from": "2027-01-01",
+    "status": "official",
+    "source_url": "https://www.gesetze-im-internet.de/milov5/__1.html"
+  },
+  {
+    "key": "minijob",
+    "label": "Regular Minijob limit",
+    "unit": "gross/month",
+    "amount": 633,
+    "effective_from": "2027-01-01",
+    "status": "official",
+    "source_url": "https://www.arbeitsagentur.de/vor-ort/stralsund/unternehmen/arbeitgebernews/der-mindestlohn-steigt"
+  }
+]
