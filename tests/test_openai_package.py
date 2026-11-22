@@ -83,6 +83,7 @@ class OpenAIPackageTests(unittest.TestCase):
                 "berlin-job-search/skills/berlin-job-search/references/job-sources.md"
             ).decode("utf-8")
         self.assertIn("provide ready-made search links the user can open themselves", skill)
+        self.assertIn("| Everything else | `ba,arbeitnow,ats` |", skill)
         self.assertIn("LinkedIn is not an automated source here", api_sources)
         self.assertIn("Data analyst jobs in Berlin", browser_search)
         self.assertIn("search directly on LinkedIn's website", job_sources)

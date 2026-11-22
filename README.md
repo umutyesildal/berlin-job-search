@@ -98,7 +98,8 @@ Markdown in `job-search/`.
 ## Not just for engineers
 
 Sources are chosen per field: tech roles use the tech boards, while recruiting, sales, product,
-healthcare and trades use Bundesagentur, Arbeitnow, LinkedIn, StepStone, Indeed and XING. Before
+healthcare and trades use employer boards, Bundesagentur, Arbeitnow, LinkedIn, StepStone, Indeed
+and XING. Before
 release it was tested end to end with two real-world profiles: a recruiter in Berlin and a
 master's student in Munich targeting product roles. In those tests, the share of on-target
 results in a recruiter search went from 29% to 87%, and German-language requirements were caught
@@ -132,7 +133,7 @@ Other agents use the same skill in plain chat. Some example prompts:
 | LinkedIn | Logged-out guest job search, low volume (unofficial; subject to LinkedIn's User Agreement) |
 | Arbeitnow | Aggregated company job boards (public API) |
 | [Daily Berlin Jobs](https://daily-berlin-jobs.vercel.app) | Berlin tech jobs: about 1,500 roles, refreshed daily (public API and MCP) |
-| 33 company boards | Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee, Workable |
+| Company boards | Berlin, Hamburg, Munich, Frankfurt and Cologne, including non-tech roles; Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee and Workable |
 | StepStone, Indeed, XING, hiring.cafe | Ready-made search links and browser recipes |
 | freehire.me | Optional tech source |
 

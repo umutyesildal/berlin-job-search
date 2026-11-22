@@ -103,19 +103,18 @@ These facts change everything:
    *Warehouse worker* → *Lagermitarbeiter*. Add *Werkstudent* for students and *Ausbildung* for
    apprenticeships.
 <!-- linkedin-guest:start id=skill-search-sources -->
-2. **Pick sources for the field.** `dailyberlinjobs`, `ats` and `freehire` only list **tech,
-   engineering and data roles**. For anything else (recruiting/HR, sales, marketing, finance,
-   operations, healthcare, trades, hospitality) never show their results; use
-   `--sources ba,arbeitnow,linkedin`.
+2. **Pick sources for the field.** `dailyberlinjobs` and `freehire` focus on **tech,
+   engineering and data roles**. Employer boards (`ats`) can list roles in any field;
+   use them alongside general sources and keep only relevant jobs.
 
    | Field | Sources | Title filter |
    |---|---|---|
    | Software, data, IT | defaults (`dailyberlinjobs,ba,arbeitnow,ats,linkedin`) | off (skill words like "Python" appear outside titles) |
-   | Everything else | `--sources ba,arbeitnow,linkedin` | `--title-match` (BA matches its full text loosely) |
+   | Everything else | `--sources ba,arbeitnow,ats,linkedin` | `--title-match` (BA matches its full text loosely) |
 3. **Run** each query:
    ```bash
    python3 "$SKILL_DIR/scripts/search.py" --what "Recruiter" --where Berlin --days 14 \
-     --sources ba,arbeitnow,linkedin --title-match \
+     --sources ba,arbeitnow,ats,linkedin --title-match \
      --seen-file job-search/seen.json --format json --out job-search/searches/$(date +%F)-recruiter.json
    ```
    Flags: `--english-only`, `--remote`, `--with-description`, `--only-new`, `--limit`. Report any

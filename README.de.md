@@ -93,7 +93,7 @@ Währenddessen erhältst du alle paar Schritte ein kurzes Update. Jedes Ergebnis
 
 ## Nicht nur für Ingenieur:innen
 
-Die Quellen richten sich nach dem Berufsfeld: Für Tech-Stellen kommen die Tech-Jobbörsen zum Einsatz, während Recruiting, Vertrieb, Produkt, Gesundheitswesen und Handwerk Bundesagentur, Arbeitnow, LinkedIn, StepStone, Indeed und XING nutzen. Vor der Veröffentlichung wurde der gesamte Ablauf anhand von zwei Profilen aus der Praxis getestet: einer Person im Recruiting in Berlin und einer Person im Masterstudium in München, die eine Stelle im Produktbereich anpeilt. In diesen Tests stieg der Anteil passender Ergebnisse in einer Recruiter-Suche von 29 % auf 87 %, und Deutsch-Anforderungen wurden mit zitierter Evidenz erkannt.
+Die Quellen richten sich nach dem Berufsfeld: Für Tech-Stellen kommen die Tech-Jobbörsen zum Einsatz. Für Recruiting, Vertrieb, Produkt, Gesundheitswesen und Handwerk werden Unternehmens-Karriereseiten, Bundesagentur, Arbeitnow, LinkedIn, StepStone, Indeed und XING genutzt. Vor der Veröffentlichung wurde der gesamte Ablauf anhand von zwei Profilen aus der Praxis getestet: einer Person im Recruiting in Berlin und einer Person im Masterstudium in München, die eine Stelle im Produktbereich anpeilt. In diesen Tests stieg der Anteil passender Ergebnisse in einer Recruiter-Suche von 29 % auf 87 %, und Deutsch-Anforderungen wurden mit zitierter Evidenz erkannt.
 
 ## Slash-Befehle (Claude Code)
 
@@ -123,7 +123,7 @@ Andere Agenten nutzen denselben Skill im normalen Chat. Beispiele für Prompts:
 | LinkedIn | Jobsuche als ausgeloggter Gast, geringe Abfragefrequenz (inoffiziell; unterliegt der Nutzungsvereinbarung von LinkedIn) |
 | Arbeitnow | Aggregierte Unternehmens-Jobbörsen (öffentliche API) |
 | [Daily Berlin Jobs](https://daily-berlin-jobs.vercel.app) | Berliner Tech-Stellen: etwa 1.500 Jobs, täglich aktualisiert (öffentliche API und MCP) |
-| 33 Unternehmens-Karriereseiten | Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee, Workable |
+| Unternehmens-Karriereseiten | Berlin, Hamburg, München, Frankfurt und Köln, auch für Nicht-Tech-Stellen; Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee und Workable |
 | StepStone, Indeed, XING, hiring.cafe | Fertige Suchlinks und Browser-Anleitungen |
 | freehire.me | Optionale Quelle für Tech-Stellen |
 
