@@ -20,15 +20,15 @@ class CityAliasTests(unittest.TestCase):
         cases = (
             (("München", "Munich", "Muenchen"), "München", "Munich, Germany", "100495942", "München, Bayern"),
             (("Köln", "Cologne", "Koeln"), "Köln", "Cologne, Germany", "90009713", "Köln, Nordrhein-Westfalen"),
-            (("Nürnberg", "Nuremberg", "Nuernberg"), "Nürnberg", "Nuremberg, Germany", None, "Nürnberg, Bayern"),
+            (("Nürnberg", "Nuremberg", "Nuernberg"), "Nürnberg", "Nuremberg, Germany", "101768819", "Nürnberg, Bayern"),
             (("Frankfurt", "Frankfurt am Main"), "Frankfurt am Main", "Frankfurt am Main, Germany", "90009714", "Frankfurt am Main, Hessen"),
-            (("Düsseldorf", "Duesseldorf"), "Düsseldorf", "Düsseldorf, Germany", None, "Düsseldorf, Nordrhein-Westfalen"),
+            (("Düsseldorf", "Duesseldorf"), "Düsseldorf", "Düsseldorf, Germany", "104008204", "Düsseldorf, Nordrhein-Westfalen"),
             (("Hamburg",), "Hamburg", "Hamburg, Germany", "101949806", "Hamburg, Germany"),
             (("Berlin",), "Berlin", "Berlin, Germany", "103035651", "Berlin, Berlin"),
-            (("Stuttgart",), "Stuttgart", "Stuttgart, Germany", None, "Stuttgart, Baden-Württemberg"),
-            (("Leipzig",), "Leipzig", "Leipzig, Germany", None, "Leipzig, Sachsen"),
-            (("Dresden",), "Dresden", "Dresden, Germany", None, "Dresden, Sachsen"),
-            (("Hannover", "Hanover"), "Hannover", "Hanover, Germany", None, "Hannover, Niedersachsen"),
+            (("Stuttgart",), "Stuttgart", "Stuttgart, Germany", "102473731", "Stuttgart, Baden-Württemberg"),
+            (("Leipzig",), "Leipzig", "Leipzig, Germany", "106955537", "Leipzig, Sachsen"),
+            (("Dresden",), "Dresden", "Dresden, Germany", "104815888", "Dresden, Sachsen"),
+            (("Hannover", "Hanover"), "Hannover", "Hanover, Germany", "100423791", "Hannover, Niedersachsen"),
         )
         for variants, ba_name, linkedin_location, geo_id, result_location in cases:
             for variant in variants:

@@ -307,7 +307,7 @@ CITY_ALIASES = {
         "canonical": "Nuremberg",
         "ba": "Nürnberg",
         "linkedin": "Nuremberg, Germany",
-        "geo_id": None,
+        "geo_id": "101768819",
         "variants": ("Nürnberg", "Nuremberg", "Nuernberg"),
     },
     "frankfurt": {
@@ -323,7 +323,7 @@ CITY_ALIASES = {
         "canonical": "Düsseldorf",
         "ba": "Düsseldorf",
         "linkedin": "Düsseldorf, Germany",
-        "geo_id": None,
+        "geo_id": "104008204",
         "variants": ("Düsseldorf", "Duesseldorf"),
     },
     "hamburg": {
@@ -347,7 +347,7 @@ CITY_ALIASES = {
         "canonical": "Stuttgart",
         "ba": "Stuttgart",
         "linkedin": "Stuttgart, Germany",
-        "geo_id": None,
+        "geo_id": "102473731",
         "variants": ("Stuttgart",),
     },
     "leipzig": {
@@ -355,7 +355,7 @@ CITY_ALIASES = {
         "canonical": "Leipzig",
         "ba": "Leipzig",
         "linkedin": "Leipzig, Germany",
-        "geo_id": None,
+        "geo_id": "106955537",
         "variants": ("Leipzig",),
     },
     "dresden": {
@@ -363,7 +363,7 @@ CITY_ALIASES = {
         "canonical": "Dresden",
         "ba": "Dresden",
         "linkedin": "Dresden, Germany",
-        "geo_id": None,
+        "geo_id": "104815888",
         "variants": ("Dresden",),
     },
     "hannover": {
@@ -371,7 +371,7 @@ CITY_ALIASES = {
         "canonical": "Hanover",
         "ba": "Hannover",
         "linkedin": "Hanover, Germany",
-        "geo_id": None,
+        "geo_id": "100423791",
         "variants": ("Hannover", "Hanover"),
     },
     "germany": {
