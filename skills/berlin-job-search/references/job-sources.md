@@ -32,7 +32,7 @@
 | Munich startup | [Munich Startup jobs](https://www.munich-startup.de/jobs/) | Munich startup ecosystem | Partly | Browser |
 | Hamburg startup | [Hamburg Startups](https://www.hamburg-startups.net/) | News, directory and opportunities | Partly `(verify)` | Manual |
 | Tech | [No Fluff Jobs Germany](https://nofluffjobs.com/de) | Technology ads that may show salary bands | Partly | Browser |
-| Tech | [Hacker News “Who is hiring?”](https://news.ycombinator.com/item?id=42069847) | Direct employer tech posts, often English; use the newest monthly thread | Yes | Manual |
+| Tech | [Hacker News “Who is hiring?”](https://news.ycombinator.com/submitted?id=whoishiring) | Direct employer tech posts, often English; use the newest monthly thread | Yes | Manual |
 | Public sector | [INTERAMT](https://www.interamt.de/) | Municipal/state public-service roles | Usually no | Browser |
 | Public sector | [Service.Bund.de](https://www.service.bund.de/) | Federal vacancies | Usually no | Browser |
 | Public sector | [Berlin Karriereportal](https://www.berlin.de/karriereportal/) | Berlin state administration/public employers | Usually no | Browser |

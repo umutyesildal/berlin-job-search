@@ -29,6 +29,17 @@ Sources: [BA/ZAV Blue Card (2026)](https://www.arbeitsagentur.de/vor-ort/zav/wor
 
 The §6 salary value is 45% of the annual pension-insurance assessment ceiling; the collective-agreement exception is in §6(1) BeschV. Confirm current rules with the relevant mission and BA/ZAV, not search snippets.
 
+### 2027 planning figures (calculated, not current)
+
+The Bundesrat [approved](https://www.bundesrat.de/SharedDocs/beratungsvorgaenge/2026/0501-0600/0576-26.html) the 2027 social-insurance assessment figures on 20 November 2026. The figures below are calculated from the approved annual pension-insurance ceiling of €106,200. As of 22 November 2026, the official 2027 Blue Card notice in the *Bundesanzeiger* and the BA/ZAV's 2027 guidance were still pending. The 2026 table above remains current through 31 December 2026, and the analyzer uses the 2026 reference year.
+
+| Route | Calculation | 2027 planning figure (gross/year) |
+|---|---|---|
+| EU Blue Card, regular | 50% under [§18g AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html) | €53,100 |
+| EU Blue Card, lower threshold | 45.3% under §18g AufenthG | €48,108.60 |
+| §6 BeschV, including the IT route without a formal qualification | 45% under [§6 BeschV](https://www.gesetze-im-internet.de/beschv_2013/__6.html) | €47,790 |
+| First skilled-worker title, age 45+, where adequate pension provision is not shown | 55% under [§18 AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__18.html) | €58,410 |
+
 ## Common routes
 
 - **Skilled workers (§18a / §18b AufenthG):** §18a covers vocational training and §18b an academic qualification. Both generally require a qualified offer and recognized qualification; BA approval depends on the case. See [BA/ZAV specialists](https://www.arbeitsagentur.de/vor-ort/zav/working-and-living-in-germany/iss-en/issue-05-2026/alm-specialists) and [Make it in Germany: work visa for qualified professionals](https://www.make-it-in-germany.com/en/visa-residence/types/work-qualified-professionals).

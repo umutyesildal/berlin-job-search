@@ -100,8 +100,9 @@ time, Werkstudent...), seniority, team (if stated), ad language, and a one-sente
   bridgeable (for example "B1 now, course to B2 in 6 months; say so in the cover letter").
 - **Work authorization (non-EU):** which permit path fits (Blue Card regular/shortage, §18a/§18b
   skilled worker, §6 BeschV for IT without a degree, existing permit, Chancenkarte job search),
-  the salary vs the 2026 threshold, and whether employer approval or BA approval is needed.
-  Cite `visa-and-work-permits.md`.
+  the confirmed gross annual salary vs the applicable threshold, and whether employer approval or
+  BA approval is needed. The analyzer reports its reference year; check official guidance if the
+  relevant year differs. Use `visa-and-work-permits.md` and mark unconfirmed offer terms unknown.
 - **Agency / Zeitarbeit:** who the actual employer is, *Arbeitnehmerüberlassung* implications,
   and whether a takeover (*Übernahme*) is mentioned.
 - **Contract signals:** *befristet* and its length, *Probezeit*, vacation days (the legal
