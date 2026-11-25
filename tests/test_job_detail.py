@@ -1,3 +1,6 @@
+import contextlib
+import html
+import io
 import json
 import sys
 import unittest
@@ -13,6 +16,98 @@ from job_detail import extract_json_ld, jsonld_detail
 
 
 class JobDetailTests(unittest.TestCase):
+    def test_fetch_recovers_nested_json_ld_after_malformed_script(self):
+        address = "https://jobs.example/engineer"
+        page = b'''<script type="application/ld+json">not JSON</script>
+        <script type="application/ld+json">
+        {"@graph": [{"@type": "WebPage"}, {"mainEntity": {
+          "@type": ["JobPosting"], "title": "Example Engineer",
+          "jobLocation": {"address": {"addressLocality": "Berlin"}},
+          "employmentType": ["FULL_TIME", "CONTRACT"]
+        }}]}
+        </script>'''
+        with patch.object(job_detail, "request_bytes", return_value=(200, page)), \
+                patch.object(job_detail, "request_json") as request_json:
+            result = job_detail.fetch_detail(address)
+        request_json.assert_not_called()
+        self.assertEqual(result["title"], "Example Engineer")
+        self.assertEqual(result["location"], "Berlin")
+        self.assertEqual(result["employment_type"], "FULL_TIME, CONTRACT")
+
+    def test_fetch_falls_back_to_matching_ats_posting_and_analyzes_raw_html(self):
+        description = (
+            '<p>Build fictional widgets.</p><span style="display:none">This is fictional hidden text.</span>'
+        )
+        greenhouse = "https://boards.greenhouse.io/example-labs/jobs/42"
+        lever = "https://jobs.lever.co/example-labs/42"
+        ashby = "https://jobs.ashbyhq.com/example-labs/42"
+        cases = (
+            (greenhouse, "https://boards-api.greenhouse.io/v1/boards/example-labs/jobs?content=true",
+             {"jobs": [{"id": 41}, {"id": 42, "title": "Working Student Engineer",
+                                    "content": html.escape(description),
+                                    "location": {"name": "Berlin"}, "first_published": "2025-01-02"}]}, None),
+            (lever, "https://api.lever.co/v0/postings/example-labs?mode=json",
+             [{"hostedUrl": lever.replace("42", "41")},
+              {"hostedUrl": lever, "text": "Working Student Engineer", "openingPlain": description,
+               "categories": {"location": "Berlin", "commitment": "Full-time"},
+               "createdAt": "2025-01-02"}], None),
+            (ashby, "https://api.ashbyhq.com/posting-api/job-board/example-labs?includeCompensation=true",
+             {"jobs": [{"jobUrl": ashby.replace("42", "41")},
+                       {"jobUrl": ashby, "title": "Working Student Engineer", "descriptionHtml": description,
+                        "location": "Berlin", "employmentType": "Full-time", "publishedAt": "2025-01-02",
+                        "compensation": {"minValue": 30000, "maxValue": 35000}}]}, "30000–35000 EUR"),
+        )
+        for address, endpoint, payload, salary in cases:
+            with self.subTest(address=address), \
+                    patch.object(job_detail, "request_bytes", return_value=(200, b"<title>Board</title>")), \
+                    patch.object(job_detail, "request_json", return_value=payload) as request_json:
+                result = job_detail.fetch_detail(address)
+                request_json.assert_called_once_with(endpoint)
+                self.assertEqual(result["url"], address)
+                self.assertEqual(result["company"], "example-labs")
+                self.assertEqual(result["title"], "Working Student Engineer")
+                self.assertEqual(result["location"], "Berlin")
+                self.assertEqual(result["date_posted"], "2025-01-02")
+                self.assertEqual(result["employment_type"], "werkstudent")
+                self.assertEqual(result["base_salary"], salary)
+                self.assertIn("Build fictional widgets.", result["description_text"])
+                self.assertNotIn("<p>", result["description_text"])
+                self.assertNotIn("_raw_description", result)
+                self.assertIn("hidden_html", {issue["type"] for issue in result["analysis"]["integrity"]["issues"]})
+
+    def test_cli_expands_ba_reference_and_renders_plain_html_fallback(self):
+        reference = "12345-EXAMPLE-42"
+        address = "https://www.arbeitsagentur.de/jobsuche/jobdetail/" + reference
+        page = b'<title>Example Engineer</title><script>hiddenScript()</script><p>Build widgets.</p>'
+        for output_format in ("json", "md"):
+            stdout = io.StringIO()
+            with self.subTest(output_format=output_format), \
+                    patch.object(sys, "argv", ["job_detail.py", reference, "--format", output_format]), \
+                    patch.object(job_detail, "request_bytes", return_value=(200, page)) as request, \
+                    contextlib.redirect_stdout(stdout):
+                self.assertEqual(job_detail.main(), 0)
+                self.assertEqual(request.call_args.args[0], address)
+                result = stdout.getvalue()
+                if output_format == "json":
+                    detail = json.loads(result)
+                    self.assertEqual(detail["title"], "Example Engineer")
+                    self.assertEqual(detail["url"], address)
+                    self.assertEqual(detail["description_text"], "Example Engineer Build widgets.")
+                else:
+                    self.assertTrue(result.startswith("# Example Engineer\n"))
+                    self.assertIn("- **URL:** " + address, result)
+                    self.assertIn("## Description\nExample Engineer Build widgets.", result)
+                    self.assertIn("## Analysis\n```json", result)
+                    self.assertNotIn("hiddenScript", result)
+
+    def test_non_success_http_response_stops_before_api_fallback(self):
+        address = "https://boards.greenhouse.io/example-labs/jobs/42"
+        with patch.object(job_detail, "request_bytes", return_value=(404, b"Not found")), \
+                patch.object(job_detail, "request_json") as request_json:
+            with self.assertRaisesRegex(RuntimeError, "HTTP 404 fetching " + address):
+                job_detail.fetch_detail(address)
+        request_json.assert_not_called()
+
     def test_extracts_jobposting_jsonld_and_analyzes_it(self):
         fixture = Path(__file__).resolve().parent / "fixtures" / "jobposting.html"
         posting = extract_json_ld(fixture.read_text(encoding="utf-8"))

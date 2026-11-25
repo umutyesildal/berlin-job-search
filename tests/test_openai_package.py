@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 import subprocess
 import sys
@@ -5,6 +7,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path, PurePosixPath
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
@@ -13,6 +16,39 @@ sys.path.insert(0, str(TOOLS))
 import package_openai
 import package_skill
 from _package_blocks import apply_guest_overrides, strip_guest_markers
+
+
+class CanonicalPackageCliTests(unittest.TestCase):
+    def test_cli_writes_usable_archive_without_compiled_artifacts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            skill = root / "skill"
+            skill.mkdir()
+            (skill / "SKILL.md").write_text("# Fictional skill\n", encoding="utf-8")
+            (skill / "asset.bin").write_bytes(b"\x00\x01\xff")
+            (skill / "leftover.pyc").write_bytes(b"not for distribution")
+            (skill / "__pycache__").mkdir()
+            (skill / "__pycache__" / "ignored.txt").write_text("temporary", encoding="utf-8")
+            output = root / "dist" / "example-skill.zip"
+            stdout = io.StringIO()
+            with patch.object(package_skill, "SKILL_DIR", skill), contextlib.redirect_stdout(stdout):
+                self.assertEqual(package_skill.main(["--out", str(output)]), 0)
+            with zipfile.ZipFile(output) as archive:
+                self.assertCountEqual(archive.namelist(), [
+                    "berlin-job-search/SKILL.md", "berlin-job-search/asset.bin",
+                ])
+                self.assertEqual(archive.read("berlin-job-search/asset.bin"), b"\x00\x01\xff")
+            self.assertIn("(2 files, {} bytes)".format(output.stat().st_size), stdout.getvalue())
+
+    def test_cli_returns_error_when_upload_limit_is_exceeded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "SKILL.md").write_text("# Fictional skill\n", encoding="utf-8")
+            stderr = io.StringIO()
+            with patch.multiple(package_skill, SKILL_DIR=root, MAX_UPLOAD_BYTES=1), \
+                    contextlib.redirect_stderr(stderr):
+                self.assertEqual(package_skill.main(["--out", str(root / "example.zip")]), 2)
+            self.assertIn("error: skill zip exceeds", stderr.getvalue())
 
 
 class OpenAIPackageTests(unittest.TestCase):
