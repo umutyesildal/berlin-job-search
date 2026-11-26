@@ -538,7 +538,8 @@ class CitySearchTests(unittest.TestCase):
         self.assertIsNone(remote["salary"])
         self.assertEqual(remote["german_required"], "required")
 
-    def test_eurojobs_request_params_and_pagination(self):
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_request_params_and_pagination(self, _sleep):
         payload = fixture_json("eurojobs.json")
         payload["meta"]["total"] = 150
         args = Namespace(
@@ -576,7 +577,8 @@ class CitySearchTests(unittest.TestCase):
         self.assertNotIn("since", query)
         self.assertNotIn("remote", query)
 
-    def test_eurojobs_retains_first_page_when_later_page_fails(self):
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_retains_first_page_when_later_page_fails(self, _sleep):
         payload = fixture_json("eurojobs.json")
         payload["meta"]["total"] = 500
         args = Namespace(
@@ -588,19 +590,93 @@ class CitySearchTests(unittest.TestCase):
         self.assertEqual(len(jobs), 2)
         self.assertEqual(errors, ["page 2: read timed out"])
 
-    def test_eurojobs_with_description_fetches_full_text(self):
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_keeps_first_page_when_second_page_is_malformed(self, _sleep):
+        first = fixture_json("eurojobs.json")
+        first["meta"]["total"] = 500
+        bad_items = fixture_json("eurojobs.json")
+        for item in bad_items["data"]:
+            item["skills"] = 7
+        bad_meta = fixture_json("eurojobs.json")
+        bad_meta["meta"] = [1, 2]
+        for second in (bad_items, bad_meta):
+            args = Namespace(
+                what="engineer", where="Berlin", days=7, max_pages=3,
+                with_description=False, remote=False,
+            )
+            with patch.object(search, "request_json", side_effect=[first, second, first]):
+                jobs, errors = fetch_eurojobs(args)
+            self.assertEqual(len(jobs), 2)
+            self.assertEqual([job["id"] for job in jobs], ["900001", "900002"])
+            self.assertTrue(errors)
+            self.assertTrue(all(error.startswith("page 2:") for error in errors))
+
+    def test_eurojobs_skips_foreign_and_malformed_urls(self):
         payload = fixture_json("eurojobs.json")
-        detail = {"data": {"id": "900001", "description_html": "<p>We build fictional APIs. English is our working language.</p>"}}
+        valid = payload["data"][0]
+        payload["data"] = [
+            valid,
+            dict(valid, id=1, url="https://evil.example/jobs/companies/x/y"),
+            dict(valid, id=2, url="http://eurojobs.ai/jobs/companies/x/y"),
+            dict(valid, id=3, url="https://[::1/jobs"),
+            dict(valid, id=4, url="https://eurojobs.ai.evil.example/jobs/x"),
+            dict(valid, id=5, url="https://user@eurojobs.ai/jobs/x"),
+            dict(valid, id=6, url="https://eurojobs.ai/apply/123"),
+            dict(valid, id=7, url=None),
+        ]
         args = Namespace(
             what="engineer", where="Berlin", days=7, max_pages=1,
-            with_description=True, remote=False,
+            with_description=False, remote=False,
         )
-        with patch.object(
-            search, "request_json",
-            side_effect=[payload, detail, RuntimeError("HTTP 404")],
-        ) as request:
+        with patch.object(search, "request_json", return_value=payload):
             jobs, errors = fetch_eurojobs(args)
-        self.assertEqual(urlsplit(request.call_args_list[1].args[0]).path, "/api/v1/jobs/900001")
+        self.assertEqual([job["id"] for job in jobs], ["900001"])
+        self.assertEqual(len(errors), 7)
+        self.assertTrue(all("skipped item" in error for error in errors))
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_requests_share_one_paced_budget(self, sleep):
+        payload = fixture_json("eurojobs.json")
+        payload["meta"]["total"] = 10_000
+        args = Namespace(
+            what="engineer", where="Berlin", days=7, max_pages=50,
+            with_description=True, remote=False, limit=100,
+        )
+        with patch.object(search, "request_json", return_value=payload) as request:
+            jobs, _ = fetch_eurojobs(args)
+            detail_errors = search.enrich_eurojobs_descriptions(jobs * 10, args)
+        self.assertEqual(request.call_count, search.EUROJOBS_MAX_REQUESTS)
+        self.assertEqual(sleep.call_count, search.EUROJOBS_MAX_REQUESTS - 1)
+        self.assertTrue(any("request budget reached" in error for error in detail_errors))
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_with_description_fetches_only_returned_results(self, _sleep):
+        payload = fixture_json("eurojobs.json")
+        payload["data"] = payload["data"] * 5
+        for index, item in enumerate(payload["data"]):
+            item["id"] = 900100 + index
+        payload["meta"]["total"] = 10
+        detail = {"data": {"description_html": "<p>We build fictional APIs. English is our working language.</p>"}}
+        params = {
+            "what": "engineer", "where": "Berlin", "days": 30, "sources": "eurojobs",
+            "limit": 1, "with_description": True,
+        }
+        with patch.object(search, "request_json", side_effect=[payload, detail]) as request:
+            result = search.run_search(params)
+        self.assertEqual(request.call_count, 2)
+        self.assertEqual(len(result["jobs"]), 1)
+        job = result["jobs"][0]
+        self.assertEqual(urlsplit(request.call_args_list[1].args[0]).path, "/api/v1/jobs/" + job["id"])
+        self.assertEqual(job["description"], "We build fictional APIs. English is our working language.")
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_description_errors_are_reported(self, _sleep):
+        jobs = parse_eurojobs(fixture_json("eurojobs.json"), include_description=True)
+        detail = {"data": {"id": "900001", "description_html": "<p>We build fictional APIs. English is our working language.</p>"}}
+        args = Namespace(with_description=True)
+        with patch.object(search, "request_json", side_effect=[detail, RuntimeError("HTTP 404")]) as request:
+            errors = search.enrich_eurojobs_descriptions(jobs, args)
+        self.assertEqual(urlsplit(request.call_args_list[0].args[0]).path, "/api/v1/jobs/900001")
         self.assertEqual(jobs[0]["description"], "We build fictional APIs. English is our working language.")
         self.assertIn("Deutschkenntnisse", jobs[1]["description"])
         self.assertEqual(errors, ["detail 900002: HTTP 404"])
