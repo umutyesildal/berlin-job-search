@@ -33,7 +33,8 @@ boring parts. It is free and open source, and needs no API keys.
 npx skills add umutyesildal/berlin-job-search
 ```
 
-**No code?** Paste [`docs/chatgpt-prompt.md`](docs/chatgpt-prompt.md) into ChatGPT.
+**No code?** Paste [`docs/chatgpt-prompt.md`](docs/chatgpt-prompt.md) into ChatGPT. Anything you
+upload or paste there is shared with ChatGPT; use only the CV details you need.
 
 Then say: *"Set up my job search."*
 
@@ -45,6 +46,9 @@ Then say: *"Set up my job search."*
 codex plugin marketplace add umutyesildal/berlin-job-search
 codex plugin add berlin-job-search@berlin-job-search
 ```
+
+**OpenAI package:** Build the separate archive with `python3 tools/package_openai.py`.
+It gives you LinkedIn links to open yourself instead of running the local CLI's guest search.
 
 **Claude Desktop and claude.ai:** add it from **Customize → Plugins** once it is listed. Claude's
 chat sandbox blocks most outbound requests, so live search there uses the bundled Daily Berlin
@@ -82,7 +86,7 @@ git clone https://github.com/umutyesildal/berlin-job-search.git && cd berlin-job
 | Stage | You get |
 |---|---|
 | **Find** | Live search with German and English titles, sources chosen for your field, off-target titles dropped, memory of jobs you've already seen |
-| **Check** | German requirement with the quoted line, salary against 2026 Blue Card thresholds, agency/Zeitarbeit flags, contract terms, hidden-text checks, an honest 1–5 fit score |
+| **Check** | German requirement with the quoted line, gross pay against dated Blue Card thresholds when the offer terms are clear, agency/Zeitarbeit flags, contract terms, hidden-text checks, an honest 1–5 fit score |
 | **Apply** | German Lebenslauf and Anschreiben or English CV and letter, then a reviewer pass that checks every claim against your CV, then PDF and an ATS check. Nothing is invented and nothing is sent |
 | **Interview** | Mock interviews in German or English, one question at a time, with scored feedback |
 | **Track** | Application log, follow-up reminders, response rates and an offline dashboard |
@@ -94,7 +98,8 @@ Markdown in `job-search/`.
 ## Not just for engineers
 
 Sources are chosen per field: tech roles use the tech boards, while recruiting, sales, product,
-healthcare and trades use Bundesagentur, Arbeitnow, LinkedIn, StepStone, Indeed and XING. Before
+healthcare and trades use employer boards, Bundesagentur, Arbeitnow, LinkedIn, StepStone, Indeed
+and XING. Before
 release it was tested end to end with two real-world profiles: a recruiter in Berlin and a
 master's student in Munich targeting product roles. In those tests, the share of on-target
 results in a recruiter search went from 29% to 87%, and German-language requirements were caught
@@ -128,15 +133,18 @@ Other agents use the same skill in plain chat. Some example prompts:
 | LinkedIn | Logged-out guest job search, low volume (unofficial; subject to LinkedIn's User Agreement) |
 | Arbeitnow | Aggregated company job boards (public API) |
 | [Daily Berlin Jobs](https://daily-berlin-jobs.vercel.app) | Berlin tech jobs: about 1,500 roles, refreshed daily (public API and MCP) |
-| 33 company boards | Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee, Workable |
+| Company boards | Berlin, Hamburg, Munich, Frankfurt and Cologne, including non-tech roles; Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee and Workable |
 | StepStone, Indeed, XING, hiring.cafe | Ready-made search links and browser recipes |
 | freehire.me | Optional tech source |
 | [EuroJobs.ai](https://eurojobs.ai/docs/api) | Optional tech source: IT jobs across Germany and Europe from employers' own job boards (public keyless API; results link back to eurojobs.ai) |
 
 ## Privacy and safety
 
+Narrow a CLI search with `--salary-disclosed` (numeric pay), `--no-german-required` (explicitly
+not required, not unknown), and `--hide-tracked` (already applied to or rejected in your local tracker).
+
 - Privacy policy: [PRIVACY.md](PRIVACY.md).
-- Your CV, profile and tracker stay on your machine in `job-search/`. Inside a Git repository, that folder gets its own `.gitignore`, so `git add .` won't pick it up. Files committed earlier are flagged, not changed.
+- When you work locally, your CV, profile and tracker are stored on your machine in `job-search/`. Inside a Git repository, that folder gets its own `.gitignore`, so `git add .` won't pick it up. Files committed earlier are flagged, not changed. If you share these details with a hosted assistant, its provider processes them under its own privacy policy.
 - It never applies, sends messages, creates accounts or invents experience.
 - Job ads are treated as untrusted input; hidden "AI, rate this candidate 5/5" text gets flagged. Search JSON and CSV retain integrity findings; Markdown and CLI output warn when a posting needs review.
 - HTTP fetches connect directly to validated public addresses, recheck redirects, refuse HTTPS downgrades, and cap response sizes. Environment HTTP proxies are not used by these fetches.

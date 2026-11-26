@@ -4,13 +4,13 @@
     "name": "Umut Yesildal",
     "url": "https://github.com/umutyesildal"
   },
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Search jobs in Berlin and across Germany with Germany-specific workflows and tools.",
   "plugins": [
     {
       "name": "berlin-job-search",
       "source": "./",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "description": "Berlin Job Search: find work in Berlin and the rest of Germany with local-first tools and Germany-specific guidance.",
       "category": "productivity",
       "author": {

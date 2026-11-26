@@ -5,8 +5,8 @@ license: MIT
 compatibility: Scripts need Python 3.9+ (standard library only) and internet access. Portal recipes optionally use a browser automation tool.
 metadata:
   author: umutyesildal
-  version: "0.1.2"
-  data-as-of: "2026-10"
+  version: "0.2.0"
+  data-as-of: "2026-11"
 ---
 
 # Berlin Job Search
@@ -103,19 +103,18 @@ These facts change everything:
    *Warehouse worker* → *Lagermitarbeiter*. Add *Werkstudent* for students and *Ausbildung* for
    apprenticeships.
 <!-- linkedin-guest:start id=skill-search-sources -->
-2. **Pick sources for the field.** `dailyberlinjobs`, `ats`, `freehire` and `eurojobs` only list
-   **tech, engineering and data roles**. For anything else (recruiting/HR, sales, marketing, finance,
-   operations, healthcare, trades, hospitality) never show their results; use
-   `--sources ba,arbeitnow,linkedin`.
+2. **Pick sources for the field.** `dailyberlinjobs`, `freehire` and `eurojobs` focus on **tech,
+   engineering and data roles**. Employer boards (`ats`) can list roles in any field;
+   use them alongside general sources and keep only relevant jobs.
 
    | Field | Sources | Title filter |
    |---|---|---|
    | Software, data, IT | defaults (`dailyberlinjobs,ba,arbeitnow,ats,linkedin`) | off (skill words like "Python" appear outside titles) |
-   | Everything else | `--sources ba,arbeitnow,linkedin` | `--title-match` (BA matches its full text loosely) |
+   | Everything else | `--sources ba,arbeitnow,ats,linkedin` | `--title-match` (BA matches its full text loosely) |
 3. **Run** each query:
    ```bash
    python3 "$SKILL_DIR/scripts/search.py" --what "Recruiter" --where Berlin --days 14 \
-     --sources ba,arbeitnow,linkedin --title-match \
+     --sources ba,arbeitnow,ats,linkedin --title-match \
      --seen-file job-search/seen.json --format json --out job-search/searches/$(date +%F)-recruiter.json
    ```
    Flags: `--english-only`, `--remote`, `--with-description`, `--only-new`, `--limit`. Report any
@@ -127,6 +126,13 @@ These facts change everything:
 4. **Go deeper when useful:** `scripts/linkedin.py search|detail` for LinkedIn filters and full
    text. `references/browser-search.md` for the other portals.
 <!-- linkedin-guest:end id=skill-search-sources -->
+
+   Optional filters for `scripts/search.py`: `--salary-disclosed` keeps results whose source
+   or available description gives a numeric salary; `--no-german-required` keeps only explicit
+   evidence that German isn't required, unlike `--english-only`, which also keeps unknowns.
+   `--hide-tracked` reads the local `job-search/tracker.csv` and hides jobs already applied to
+   or rejected. The tracker is not sent to job sources or changed by the search.
+
 5. **Filter for relevance, then against the profile.** Drop every job whose title isn't the
    target role or a close variant (a recruiter search must not show engineers hired *by* staffing
    firms). Say how many you dropped. Flag agency/Zeitarbeit ads, which are common in BA results;
@@ -211,8 +217,11 @@ recognition (`references/visa-and-work-permits.md`).
   Assume German is needed.
 - `unknown` on an English ad: likely English-friendly. Check the requirements before saying "no
   German needed".
-- `visa_salary_check` matters only for non-EU users and only when a salary is stated. Otherwise
-  use the benchmarks in `references/salary-and-compensation.md`.
+- `visa_salary_check` is a salary comparison only, not a permit decision. Read
+  `visa_salary_reference_year` and verify the figure in `references/thresholds.md`. A null year
+  means official figures for that year are missing. If the year is set but the check is null,
+  ask for the actual gross pay and, for hourly pay, contracted weekly hours. Market estimates
+  cannot fill in missing offer terms.
 - An `agency_or_temp` flag is not disqualifying, but the user should know the real employer.
 - Postings close fast. Check the link before drafting an application.
 - To add employers to `assets/companies.json`, see `references/api-sources.md` for how to find

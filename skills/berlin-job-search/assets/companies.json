@@ -19,12 +19,12 @@
   },
   {
     "name": "Parloa",
-    "ats": "greenhouse",
+    "ats": "ashby",
     "slug": "parloa",
-    "career_page": "https://job-boards.greenhouse.io/parloa",
+    "career_page": "https://jobs.ashbyhq.com/parloa",
     "city": "Berlin",
     "description": "Conversational-AI company building enterprise customer-service agents.",
-    "verified_at": "2026-10-23"
+    "verified_at": "2026-11-22"
   },
   {
     "name": "deepset",
@@ -295,5 +295,311 @@
     "city": "Munich",
     "description": "Process-intelligence software company with a major Munich office.",
     "verified_at": "2026-10-23"
+  },
+  {
+    "name": "Freenow",
+    "ats": "greenhouse",
+    "slug": "freenow",
+    "career_page": "https://job-boards.greenhouse.io/freenow",
+    "city": "Hamburg",
+    "description": "Ride-hailing and urban mobility.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "adjoe",
+    "ats": "ashby",
+    "slug": "adjoe",
+    "career_page": "https://jobs.ashbyhq.com/adjoe",
+    "city": "Hamburg",
+    "description": "Mobile advertising technology.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "applike group",
+    "ats": "ashby",
+    "slug": "applike-group",
+    "career_page": "https://jobs.ashbyhq.com/applike-group",
+    "city": "Hamburg",
+    "description": "Mobile app business group.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "plancraft",
+    "ats": "ashby",
+    "slug": "plancraft",
+    "career_page": "https://jobs.ashbyhq.com/plancraft",
+    "city": "Hamburg",
+    "description": "Business software for trades.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "1KOMMA5°",
+    "ats": "personio",
+    "slug": "1komma5grad",
+    "career_page": "https://1komma5grad.jobs.personio.de",
+    "city": "Hamburg",
+    "description": "Residential clean-energy systems.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Shipzero",
+    "ats": "personio",
+    "slug": "shipzero",
+    "career_page": "https://shipzero.jobs.personio.de",
+    "city": "Hamburg",
+    "description": "Freight emissions tracking.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "global CT",
+    "ats": "personio",
+    "slug": "globalct",
+    "career_page": "https://globalct.jobs.personio.de",
+    "city": "Hamburg",
+    "description": "Business and technology consulting.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Holisticon",
+    "ats": "personio",
+    "slug": "holisticon",
+    "career_page": "https://holisticon.jobs.personio.de",
+    "city": "Hamburg",
+    "description": "Software and technology consulting.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Impossible Cloud",
+    "ats": "lever",
+    "slug": "impossiblecloud",
+    "career_page": "https://jobs.lever.co/impossiblecloud",
+    "city": "Hamburg",
+    "description": "Cloud storage infrastructure.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "AFRY",
+    "ats": "smartrecruiters",
+    "slug": "AFRY",
+    "career_page": "https://careers.smartrecruiters.com/AFRY",
+    "city": "Hamburg",
+    "description": "Engineering and energy consulting.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Brainlab",
+    "ats": "smartrecruiters",
+    "slug": "Brainlab",
+    "career_page": "https://careers.smartrecruiters.com/Brainlab",
+    "city": "Munich",
+    "description": "Medical technology and software.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Roland Berger",
+    "ats": "smartrecruiters",
+    "slug": "RolandBerger",
+    "career_page": "https://careers.smartrecruiters.com/RolandBerger",
+    "city": "Munich",
+    "description": "Management consulting.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Scalable Capital",
+    "ats": "smartrecruiters",
+    "slug": "ScalableGmbH",
+    "career_page": "https://careers.smartrecruiters.com/ScalableGmbH",
+    "city": "Munich",
+    "description": "Investment and brokerage platform.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Orbem",
+    "ats": "ashby",
+    "slug": "orbem",
+    "career_page": "https://jobs.ashbyhq.com/orbem",
+    "city": "Munich",
+    "description": "AI-powered magnetic resonance imaging.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Tacto",
+    "ats": "ashby",
+    "slug": "tacto",
+    "career_page": "https://jobs.ashbyhq.com/tacto",
+    "city": "Munich",
+    "description": "Procurement software.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Predium",
+    "ats": "personio",
+    "slug": "predium",
+    "career_page": "https://predium.jobs.personio.de",
+    "city": "Munich",
+    "description": "Real estate decarbonization software.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Vantis",
+    "ats": "personio",
+    "slug": "vantis",
+    "career_page": "https://vantis.jobs.personio.de",
+    "city": "Munich",
+    "description": "Healthcare and medical practices.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "tado°",
+    "ats": "personio",
+    "slug": "tado",
+    "career_page": "https://tado.jobs.personio.de",
+    "city": "Munich",
+    "description": "Smart heating and energy controls.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "reev",
+    "ats": "personio",
+    "slug": "reev",
+    "career_page": "https://reev.jobs.personio.de",
+    "city": "Munich",
+    "description": "Electric vehicle charging software.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "sewts",
+    "ats": "personio",
+    "slug": "sewts",
+    "career_page": "https://sewts.jobs.personio.de",
+    "city": "Munich",
+    "description": "Industrial robotics.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Drees & Sommer",
+    "ats": "smartrecruiters",
+    "slug": "DreesSommerSE",
+    "career_page": "https://careers.smartrecruiters.com/DreesSommerSE",
+    "city": "Frankfurt",
+    "description": "Construction and real estate consulting.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "BitGo",
+    "ats": "greenhouse",
+    "slug": "bitgo",
+    "career_page": "https://job-boards.greenhouse.io/bitgo",
+    "city": "Frankfurt",
+    "description": "Digital asset custody and infrastructure.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "360T",
+    "ats": "personio",
+    "slug": "360t",
+    "career_page": "https://360t.jobs.personio.de",
+    "city": "Frankfurt",
+    "description": "Foreign exchange trading technology.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Devoteam",
+    "ats": "smartrecruiters",
+    "slug": "Devoteam",
+    "career_page": "https://careers.smartrecruiters.com/Devoteam",
+    "city": "Frankfurt",
+    "description": "Technology consulting; also lists Cologne roles.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "SIXT",
+    "ats": "smartrecruiters",
+    "slug": "SIXT",
+    "career_page": "https://careers.smartrecruiters.com/SIXT",
+    "city": "Frankfurt",
+    "description": "Car rental and mobility services.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "gridscale",
+    "ats": "recruitee",
+    "slug": "gridscale",
+    "career_page": "https://join.gridscale.io",
+    "city": "Cologne",
+    "description": "Cloud and edge infrastructure.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "envelio",
+    "ats": "personio",
+    "slug": "envelio",
+    "career_page": "https://envelio.jobs.personio.de",
+    "city": "Cologne",
+    "description": "Electricity grid planning software.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "1NCE",
+    "ats": "personio",
+    "slug": "1nce",
+    "career_page": "https://1nce.jobs.personio.de",
+    "city": "Cologne",
+    "description": "IoT connectivity services.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "everbrent",
+    "ats": "personio",
+    "slug": "everbrent",
+    "career_page": "https://everbrent.jobs.personio.de",
+    "city": "Cologne",
+    "description": "Consumer products and e-commerce.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "epilot",
+    "ats": "recruitee",
+    "slug": "epilot",
+    "career_page": "https://epilot.recruitee.com",
+    "city": "Cologne",
+    "description": "Software for utilities and energy services.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Trusted Shops",
+    "ats": "recruitee",
+    "slug": "trustedshops",
+    "career_page": "https://trustedshops.recruitee.com",
+    "city": "Cologne",
+    "description": "Trust and review services for online shops.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "The Stepstone Group",
+    "ats": "smartrecruiters",
+    "slug": "StepStoneGroup",
+    "career_page": "https://careers.smartrecruiters.com/StepStoneGroup",
+    "city": "Cologne",
+    "description": "Recruiting and job marketplaces; also lists Frankfurt roles.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "Wolt",
+    "ats": "greenhouse",
+    "slug": "wolt",
+    "career_page": "https://job-boards.greenhouse.io/wolt",
+    "city": "Frankfurt",
+    "description": "Local retail and delivery platform; also lists Hamburg roles.",
+    "verified_at": "2026-11-22"
+  },
+  {
+    "name": "SumUp",
+    "ats": "greenhouse",
+    "slug": "sumup",
+    "career_page": "https://job-boards.greenhouse.io/sumup",
+    "city": "Cologne",
+    "description": "Payments and point-of-sale services for businesses.",
+    "verified_at": "2026-11-22"
   }
 ]

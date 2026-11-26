@@ -13,21 +13,26 @@ Make it in Germany is the federal government's portal for skilled workers moving
 
 Make it in Germany does not place jobs. Its [job-search FAQ](https://www.make-it-in-germany.com/en/working-in-germany/job-search-application) says recruiters or agencies offering paid services under its name are not part of the official portal; treat fee requests made in its name as a red flag. Checked 2026-11-01.
 
-## 2026 salary and route snapshot
+## Salary and living-funds thresholds
 
-Amounts are gross annual salary unless marked otherwise. Thresholds can change each year; salary alone does not qualify someone for a permit.
+See the [dated threshold table](thresholds.md) for amounts, units, status and official sources.
+Thresholds can change each year; salary alone does not qualify someone for a permit.
 
-| Route / rule | 2026 requirement |
+| Route / rule | What to check |
 |---|---|
-| EU Blue Card, regular | €50,700. |
-| Blue Card, shortage occupation or recent graduate | €45,934.20 for shortage occupations or graduates who completed a degree within the last three years; BA approval applies to this lower-threshold category. |
-| First skilled-worker title, age 45+ | €55,770 or evidence of adequate pension provision. |
-| §6 BeschV IT specialist without formal qualification | Two years of relevant experience in the last five years, a qualified IT job and €45,630 salary; the threshold exception applies to employers bound by a collective agreement that pays its applicable terms. BA approval applies. |
-| Chancenkarte living funds | €1,091 net/month; prove with a blocked account, declaration of commitment or qualifying income. |
+| EU Blue Card, regular | Use the regular gross annual threshold unless the applicant and role qualify for the lower threshold. |
+| Blue Card, shortage occupation or recent graduate | Lower threshold for shortage occupations or graduates who completed a degree within the last three years; BA approval applies to this category. |
+| First skilled-worker title, age 45+ | Salary threshold or evidence of adequate pension provision. |
+| §6 BeschV IT specialist without formal qualification | Two years of relevant experience in the last five years, a qualified IT job and the salary threshold; the threshold exception applies to employers bound by a collective agreement that pays its applicable terms. BA approval applies. |
+| Chancenkarte living funds | Monthly net amount; prove with a blocked account, declaration of commitment or qualifying income. |
 
 Sources: [BA/ZAV Blue Card (2026)](https://www.arbeitsagentur.de/vor-ort/zav/working-and-living-in-germany/iss-en/issue-03-2026/blue-card), [Make it in Germany: Skilled Immigration Act](https://www.make-it-in-germany.com/en/visa-recognition/skilled-immigration-act/print), [BA/ZAV skilled workers](https://www.arbeitsagentur.de/vor-ort/zav/working-and-living-in-germany/iss-en/issue-05-2026/alm-specialists), [§6 BeschV](https://www.gesetze-im-internet.de/beschv_2013/__6.html), [German mission IT specialist information](https://rabat.diplo.de/ma-de/service/2704652-2704652), and [Chancenkarte job-search route](https://www.make-it-in-germany.com/en/visa-residence/opportunity-card/job-search).
 
 The §6 salary value is 45% of the annual pension-insurance assessment ceiling; the collective-agreement exception is in §6(1) BeschV. Confirm current rules with the relevant mission and BA/ZAV, not search snippets.
+
+### 2027 planning figures (calculated, not current)
+
+The Bundesrat [approved](https://www.bundesrat.de/SharedDocs/beratungsvorgaenge/2026/0501-0600/0576-26.html) the 2027 social-insurance assessment figures on 20 November 2026. The planning rows in the [dated threshold table](thresholds.md) use the approved annual pension-insurance ceiling of €106,200 and the formulas in [§18g AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html), [§6 BeschV](https://www.gesetze-im-internet.de/beschv_2013/__6.html) and [§18 AufenthG](https://www.gesetze-im-internet.de/aufenthg_2004/__18.html). As of 22 November 2026, the official 2027 Blue Card notice in the *Bundesanzeiger* and BA/ZAV's 2027 guidance were still pending. The analyzer compares only official, effective values for the reference year, never planning figures.
 
 ## Common routes
 
@@ -51,13 +56,13 @@ Figures and rules below are the 2026 snapshot, accessed 24 October 2026. The per
 | Wage tax | Student wages may have payroll-tax withholding; the final annual tax depends on total income and personal circumstances. Do not infer net pay from gross salary or student status alone. | [Federal Ministry of Finance wage-tax calculator](https://www.bmf-steuerrechner.de/), accessed 2026-10-24. |
 | Job search after a German degree (§20(1) no. 1 AufenthG) | A third-country graduate may receive a residence permit for up to **18 months** to seek qualified employment. The official guide says any work may be taken during that period; proof of completed German studies, health insurance and livelihood is required. Apply before the current title expires. | [Residence Act §20](https://www.gesetze-im-internet.de/aufenthg_2004/__20.html); [Make it in Germany — prospects after graduation](https://www.make-it-in-germany.com/en/study-vocational-training/studies-in-germany/prospects-after), accessed 2026-10-24. |
 | Transition to qualified work | With an appropriate qualified offer and academic qualification, a graduate may apply to switch to §18b; a Blue Card is another route if all job/qualification conditions and salary thresholds are met. | [Residence Act §18b](https://www.gesetze-im-internet.de/aufenthg_2004/__18b.html); [Make it in Germany — work visa for qualified professionals](https://www.make-it-in-germany.com/en/visa-residence/types/work-qualified-professionals), accessed 2026-10-24. |
-| Recent-graduate Blue Card threshold | **€45,934.20 gross/year in 2026** for the lower-threshold category, including eligible graduates within three years of graduation; BA approval applies where required. The regular 2026 threshold is **€50,700**. A product title does not by itself establish eligibility. | [BA/ZAV Blue Card (2026)](https://www.arbeitsagentur.de/vor-ort/zav/working-and-living-in-germany/iss-en/issue-03-2026/blue-card), accessed 2026-10-24; see also the snapshot table above. **(verify case eligibility)** |
+| Recent-graduate Blue Card threshold | The lower-threshold category includes eligible graduates within three years of graduation; BA approval applies where required. A product title does not by itself establish eligibility. | [Dated threshold table](thresholds.md); [BA/ZAV Blue Card (2026)](https://www.arbeitsagentur.de/vor-ort/zav/working-and-living-in-germany/iss-en/issue-03-2026/blue-card). **(verify case eligibility)** |
 
 The residence-permit workday account and the social-insurance 20-hour test are different checks. A working-student contract or a LinkedIn “Full-time” label does not resolve either one; check the exact hours, title, permit wording, enrollment and other jobs with the responsible authority/insurer.
 
 ## Chancenkarte
 
-The Opportunity Card allows eligible non-EU/EFTA nationals to seek work for up to one year. Recognized skilled workers use the no-points route; the points route requires six points and a qualifying qualification, plus A1 German or B2 English. Holders may work up to 20 hours/week and trial work for up to two weeks per employer. Financial proof is €1,091 net/month in 2026. See [job-search route](https://www.make-it-in-germany.com/en/visa-residence/opportunity-card/job-search) and [questions and answers](https://www.make-it-in-germany.com/en/visa-residence/opportunity-card/questions-answers).
+The Opportunity Card allows eligible non-EU/EFTA nationals to seek work for up to one year. Recognized skilled workers use the no-points route; the points route requires six points and a qualifying qualification, plus A1 German or B2 English. Holders may work up to 20 hours/week and trial work for up to two weeks per employer. See the [dated threshold table](thresholds.md) for monthly financial proof and the official [job-search route](https://www.make-it-in-germany.com/en/visa-residence/opportunity-card/job-search) and [questions and answers](https://www.make-it-in-germany.com/en/visa-residence/opportunity-card/questions-answers).
 
 From 1 October 2026, some missions, including the German mission in the UK, require applications through the [Consular Services Portal](https://digital.diplo.de/chancenkarte). This is mission-specific; follow the [UK mission's instructions](https://uk.diplo.de/uk-en/02/visa/chancenkarte-2659588). Budget for the full stay, insurance, rent/deposit, travel and recognition costs.
 
