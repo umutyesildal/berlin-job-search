@@ -1,3 +1,6 @@
+import contextlib
+import io
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -9,6 +12,7 @@ SCRIPTS = ROOT / "skills" / "berlin-job-search" / "scripts"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 sys.path.insert(0, str(SCRIPTS))
 
+import linkedin
 from linkedin import (
     LinkedInRequestError,
     build_search_url,
@@ -137,6 +141,36 @@ class LinkedInParsingTests(unittest.TestCase):
 
 
 class LinkedInNetworkTests(unittest.TestCase):
+    def test_transient_http_failures_retry_at_most_twice(self):
+        for final_status in (200, 503):
+            with self.subTest(final_status=final_status), patch.object(linkedin, "_pace"), \
+                    patch.object(linkedin.time, "sleep") as sleep, \
+                    patch.object(linkedin, "request_bytes", side_effect=[
+                        (429, b""), (503, b""), (final_status, b"example listing"),
+                    ]) as request:
+                url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+                if final_status == 200:
+                    self.assertEqual(linkedin.fetch_html(url), "example listing")
+                else:
+                    with self.assertRaisesRegex(LinkedInRequestError, "after two retries: HTTP 503"):
+                        linkedin.fetch_html(url)
+                self.assertEqual(request.call_count, 3)
+                self.assertEqual(sleep.call_count, 2)
+
+    def test_detail_cli_normalizes_id_and_reports_missing_guest_posting(self):
+        job_url = "https://www.linkedin.com/jobs/view/example-engineer-1234567890/"
+        stderr = io.StringIO()
+        with patch.object(sys, "argv", ["linkedin.py", "detail", job_url]), \
+                patch.object(linkedin, "_pace"), \
+                patch.object(linkedin, "request_bytes", return_value=(404, b"")) as request, \
+                contextlib.redirect_stderr(stderr):
+            self.assertEqual(linkedin.main(), 1)
+        request.assert_called_once()
+        self.assertEqual(request.call_args.args[0], linkedin.DETAIL_URL + "/1234567890")
+        self.assertEqual(json.loads(stderr.getvalue().splitlines()[-1]), {
+            "code": "LINKEDIN_FAILED", "error": "LinkedIn job 1234567890 was not found",
+        })
+
     def test_http_999_stops_without_retry_or_connection_switch_advice(self):
         import linkedin
         with patch('linkedin._pace'), patch('linkedin.time.sleep') as sleep, \
