@@ -138,6 +138,7 @@ Other agents use the same skill in plain chat. Some example prompts:
 | Company boards | Berlin, Hamburg, Munich, Frankfurt and Cologne, including non-tech roles; Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee and Workable |
 | StepStone, Indeed, XING, hiring.cafe | Ready-made search links and browser recipes |
 | freehire.me | Optional tech source |
+| [EuroJobs.ai](https://eurojobs.ai/docs/api) | Optional tech source: IT jobs across Germany and Europe from employers' own job boards (public keyless API; results link back to eurojobs.ai) |
 
 ## Privacy and safety
 
@@ -163,6 +164,7 @@ not required, not unknown), and `--hide-tracked` (already applied to or rejected
 | `boards-api.greenhouse.io`, `api.lever.co`, `api.ashbyhq.com`, `*.jobs.personio.de`, `api.smartrecruiters.com`, `*.recruitee.com`, `apply.workable.com`, `join.com` | Company boards listed in `assets/companies.json` |
 | `www.linkedin.com` | Logged-out guest job search (local CLI, low volume) |
 | `freehire.me` | Only with `--sources freehire` |
+| `eurojobs.ai` | Only with `--sources eurojobs` |
 | Any job URL you pass to `job_detail.py` | Fetches that public page |
 | Local Chrome/Chromium/Edge, `pypdf`/`pdftotext` | PDF rendering and text extraction, if installed |
 

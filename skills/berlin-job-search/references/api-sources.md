@@ -4,7 +4,7 @@
 
 The scripts use Python's standard library, public endpoints, a 20-second request timeout and the user agent `berlin-job-search-skill/0.1 (+https://github.com/umutyesildal/berlin-job-search)`. No login/secrets are required. Each `meta.sources` entry has `ok`, `count`, `error` and `partial_errors`; a source fails only if it returns no records and has errors. Counts are post-filter, pre-dedup/global limit; partial errors preserve successful results. ATS uses at most four workers.
 <!-- linkedin-guest:start id=api-default-sources -->
-LinkedIn uses a browser-like user agent. Default sources: `dailyberlinjobs,ba,arbeitnow,ats,linkedin`; Freehire is opt-in.
+LinkedIn uses a browser-like user agent. Default sources: `dailyberlinjobs,ba,arbeitnow,ats,linkedin`; Freehire and EuroJobs are opt-in.
 <!-- linkedin-guest:end id=api-default-sources -->
 
 ## Bundesagentur für Arbeit (BA) Jobsuche
@@ -125,6 +125,23 @@ Responses use `{data, meta}`. A job's `public_slug`, `title`, `company`, `locati
 
 Dated 2026-10-23 query-parser snapshot: the agent endpoint returned 76,724 German postings without `q` and 10,587 for `q=software engineer`; counts vary, and the request recognized `q`. Geography facets are ORed; the script locally filters location text to the requested city.
 
+## EuroJobs
+
+[EuroJobs.ai](https://eurojobs.ai/) lists IT jobs in the EU, EEA, UK and Switzerland, collected hourly from employers' own ATS boards (Greenhouse, Lever, Ashby, Personio and others). It is a third-party best-effort service with no SLA and only lists tech roles. Search is opt-in (`--sources eurojobs`).
+
+```text
+GET https://eurojobs.ai/api/v1/jobs
+GET https://eurojobs.ai/api/v1/jobs/{id}
+```
+
+Both endpoints are public and unauthenticated; the [API documentation](https://eurojobs.ai/docs/api) describes the parameters and terms. The script sends `q` from `--what`, `country=DE`, `location=<city slug>` from `--where` (the English city name, for example `munich` for München; omitted for `Germany`), `since` (`24h`, `3d`, `7d` or `30d`, the smallest window that covers `--days`; omitted above 30 days), `remote=true` when `--remote` is set, `per_page=100` and a 1-based `page`. Pages are fetched one at a time, capped by `--max-pages`, and stop once `meta.total` is reached. To follow the API's fair-use guidance, list and detail calls share one budget of six requests per search, at least 12 seconds apart. Responses are cached for about five minutes.
+
+Responses use `{data, meta}`. A job's `id`, `title`, `company_name`, `location`, `url`, `posted_at` (falling back to `created_at`), `work_mode`, `employment_type`, `salary` (`min`, `max`, `currency`, `period`) and `description_snippet` map to the unified record; `work_mode`, `skills` and `visa_sponsorship` are kept as extra fields. The record's `url` is the public eurojobs.ai job page. `apply_url` is not used because it passes through a EuroJobs sign-in before reaching the employer. Only `https://eurojobs.ai/jobs/<slug>...` listing URLs are accepted (host `eurojobs.ai` exactly, a nonempty slug, no `.` or `..` path segments); any other or malformed URL, or an item with unexpected field types, is skipped with a source warning. A malformed page stops pagination but keeps earlier results. With `--with-description`, full text is fetched from `GET /api/v1/jobs/{id}` (`data.description_html`) only for EuroJobs results that remain after filtering and `--limit`, within the request budget; other results keep the short snippet. `--english-only` and `--no-german-required` are applied again to the full text, so a job whose description requires German is dropped (this can return fewer than `--limit` results; no extra requests are made to refill).
+
+**Attribution:** the API terms ask anyone who republishes listings to link back to eurojobs.ai. Each result's `url` is its eurojobs.ai job page, which satisfies this when results are shown with their links.
+
+Dated check (2026-11-22): `country=DE&location=berlin` returned 1,671 live jobs; `munich`, `hamburg`, `frankfurt`, `cologne`, `dusseldorf`, `hanover`, `stuttgart` and `leipzig` slugs all returned jobs, while `muenchen` returned none, so the script maps German city names to English slugs.
+
 ## Daily Berlin Jobs
 
 [Daily Berlin Jobs (Berlin tech jobs)](https://daily-berlin-jobs.vercel.app) is Umut Yesildal's public, read-only board for Berlin tech engineering roles (software, data/AI, platform/DevOps/SRE, security, mobile, QA, and embedded engineering). It requires no key and is not a general Berlin jobs source. The board refreshes once per day, approximately 06:00–07:30 Europe/Berlin, and removes a posting 30 days after its posting date. API responses are cached and may only change about once daily. Treat `/api/v1/status.updated_at` as the freshness source of truth; do not infer freshness from a list response. LinkedIn-sourced rows have no description in the service; ATS-sourced detail can include one.
@@ -235,7 +252,7 @@ See the [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp) for
 | Output element | Behavior |
 |---|---|
 | `id` | Source-specific stable identifier when available; otherwise a URL or source/company/title fallback. |
-| `source` | `dailyberlinjobs`, `ba`, `arbeitnow`, `ats`, `linkedin`, or `freehire`. The DBJ `via` field retains `ats` or `linkedin`; the ATS board provider is represented as `ats`, and the company catalog retains the concrete provider type. |
+| `source` | `dailyberlinjobs`, `ba`, `arbeitnow`, `ats`, `linkedin`, `freehire`, or `eurojobs`. The DBJ `via` field retains `ats` or `linkedin`; the ATS board provider is represented as `ats`, and the company catalog retains the concrete provider type. |
 | `url` | The public posting/detail URL, not an application submission or tracking endpoint. BA uses its public detail page; `externeURL` is supplemental only. |
 | `posted` | ISO date `YYYY-MM-DD` when the source provides a parseable timestamp; otherwise `null`. |
 | `remote` | `true` only when a source explicitly marks remote or the user selected the LinkedIn remote filter; `false` for explicit hybrid/on-site labels; otherwise `null`. |

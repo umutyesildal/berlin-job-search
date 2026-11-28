@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -28,8 +29,10 @@ from _common import (
     plain,
     protect_if_inside_data_dir,
     request_bytes,
+    public_url,
     request_json,
     salary_text,
+    slugify,
     source_date as iso_date,
     warn_data_dir_protection,
     write_output,
@@ -488,6 +491,12 @@ def mark_seen_jobs(
     return [job for job, _, _ in selected]
 
 
+def fails_language_filters(job: dict[str, Any], args: argparse.Namespace) -> bool:
+    if getattr(args, "english_only", False) and job.get("german_required") == "required":
+        return True
+    return bool(getattr(args, "no_german_required", False) and job.get("german_required") != "not_required")
+
+
 def filter_jobs(jobs: list[dict[str, Any]], args: argparse.Namespace) -> list[dict[str, Any]]:
     cutoff = dt.date.today() - dt.timedelta(days=args.days) if args.days else None
     query_words = [word.casefold() for word in re.findall(r"\w+", args.what)]
@@ -496,9 +505,7 @@ def filter_jobs(jobs: list[dict[str, Any]], args: argparse.Namespace) -> list[di
     for job in jobs:
         if args.remote and job.get("remote") is not True:
             continue
-        if args.english_only and job.get("german_required") == "required":
-            continue
-        if getattr(args, "no_german_required", False) and job.get("german_required") != "not_required":
+        if fails_language_filters(job, args):
             continue
         if getattr(args, "salary_disclosed", False) and not job.get("salary"):
             continue
@@ -812,6 +819,226 @@ def fetch_freehire(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list
     return jobs, errors
 
 
+EUROJOBS_SINCE_WINDOWS = ((1, "24h"), (3, "3d"), (7, "7d"), (30, "30d"))
+EUROJOBS_BASE_URL = "https://eurojobs.ai"
+EUROJOBS_HOST = "eurojobs.ai"
+# The API docs ask clients to keep to a few requests a minute; list and detail calls share one budget.
+EUROJOBS_MIN_INTERVAL = 12.0
+EUROJOBS_MAX_REQUESTS = 6
+
+
+class EurojobsPacer:
+    def __init__(self, min_interval: Optional[float] = None, max_requests: Optional[int] = None) -> None:
+        self.min_interval = EUROJOBS_MIN_INTERVAL if min_interval is None else min_interval
+        self.max_requests = EUROJOBS_MAX_REQUESTS if max_requests is None else max_requests
+        self.count = 0
+        self.last: Optional[float] = None
+
+    def remaining(self) -> int:
+        return max(0, self.max_requests - self.count)
+
+    def request(self, url: str) -> Any:
+        if not self.remaining():
+            raise RuntimeError("EuroJobs request budget of {} reached".format(self.max_requests))
+        if self.last is not None:
+            wait = self.min_interval - (time.monotonic() - self.last)
+            if wait > 0:
+                time.sleep(wait)
+        self.count += 1
+        try:
+            return request_json(url)
+        finally:
+            self.last = time.monotonic()
+
+
+def eurojobs_pacer(args: argparse.Namespace) -> EurojobsPacer:
+    pacer = getattr(args, "eurojobs_pacer", None)
+    if not isinstance(pacer, EurojobsPacer):
+        pacer = EurojobsPacer()
+        args.eurojobs_pacer = pacer
+    return pacer
+
+
+def eurojobs_listing_url(value: Any) -> Optional[str]:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = public_url(value.strip())
+    except ValueError:
+        return None
+    host = (parsed.hostname or "").casefold()
+    if parsed.scheme != "https" or host != EUROJOBS_HOST or parsed.port not in {None, 443}:
+        return None
+    segments = parsed.path.split("/")
+    if len(segments) < 3 or segments[:2] != ["", "jobs"] or not segments[2]:
+        return None
+    if any(urllib.parse.unquote(segment) in {".", ".."} for segment in segments):
+        return None
+    return value.strip()
+
+
+def eurojobs_salary(salary: Any) -> Optional[str]:
+    if not isinstance(salary, dict):
+        return None
+    return freehire_salary({
+        "salary_min": salary.get("min"),
+        "salary_max": salary.get("max"),
+        "salary_currency": salary.get("currency"),
+        "salary_period": salary.get("period"),
+    })
+
+
+def eurojobs_location_slug(where: Optional[str]) -> Optional[str]:
+    if not where:
+        return None
+    alias = city_alias(where)
+    if alias and alias["key"] == "germany":
+        return None
+    return slugify(canonical_location_name(where))
+
+
+def eurojobs_since(days: int) -> Optional[str]:
+    if days <= 0:
+        return None
+    for limit, window in EUROJOBS_SINCE_WINDOWS:
+        if days <= limit:
+            return window
+    return None
+
+
+def eurojobs_text(item: dict[str, Any], key: str) -> Optional[str]:
+    value = item.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, (str, int, float)) or isinstance(value, bool):
+        raise ValueError("field '{}' has type {}".format(key, type(value).__name__))
+    return str(value)
+
+
+def parse_eurojobs_item(item: Any, include_description: bool = False) -> dict[str, Any]:
+    if not isinstance(item, dict):
+        raise ValueError("item is not an object")
+    url = eurojobs_listing_url(item.get("url"))
+    if not url:
+        raise ValueError("listing URL is not an https://eurojobs.ai/jobs/ page")
+    skills = item.get("skills")
+    if skills is None:
+        skills = []
+    if not isinstance(skills, list):
+        raise ValueError("field 'skills' has type {}".format(type(skills).__name__))
+    salary = item.get("salary")
+    if salary is not None and not isinstance(salary, dict):
+        raise ValueError("field 'salary' has type {}".format(type(salary).__name__))
+    mode = (eurojobs_text(item, "work_mode") or "").casefold()
+    remote = True if mode == "remote" else False if mode in {"hybrid", "onsite", "on-site"} else None
+    employment = (eurojobs_text(item, "employment_type") or "").replace("_", "-")
+    job = make_job(
+        "eurojobs", eurojobs_text(item, "title"), eurojobs_text(item, "company_name"),
+        eurojobs_text(item, "location"), url,
+        eurojobs_text(item, "posted_at") or eurojobs_text(item, "created_at"), remote,
+        employment or None, eurojobs_salary(salary), eurojobs_text(item, "description_snippet"),
+        include_description=include_description, job_id=eurojobs_text(item, "id"),
+    )
+    visa = item.get("visa_sponsorship")
+    job.update({
+        "work_mode": mode or None,
+        "skills": [str(skill) for skill in skills if isinstance(skill, (str, int, float)) and skill],
+        "visa_sponsorship": visa if isinstance(visa, bool) else None,
+    })
+    return job
+
+
+def parse_eurojobs_page(
+    payload: dict[str, Any], include_description: bool = False,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    jobs = []
+    skipped = []
+    for index, item in enumerate(payload.get("data") or []):
+        try:
+            jobs.append(parse_eurojobs_item(item, include_description))
+        except ValueError as error:
+            identifier = item.get("id") if isinstance(item, dict) else None
+            skipped.append("skipped item {}: {}".format(identifier if identifier is not None else "#{}".format(index), error))
+    return jobs, skipped
+
+
+def parse_eurojobs(payload: dict[str, Any], include_description: bool = False) -> list[dict[str, Any]]:
+    return parse_eurojobs_page(payload, include_description)[0]
+
+
+def fetch_eurojobs(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list[str]]:
+    params = {"q": args.what, "country": "DE", "per_page": "100"}
+    location = eurojobs_location_slug(args.where)
+    if location:
+        params["location"] = location
+    since = eurojobs_since(args.days)
+    if since:
+        params["since"] = since
+    if args.remote:
+        params["remote"] = "true"
+    pacer = eurojobs_pacer(args)
+    # Leave room in the shared budget for the description calls made after filtering.
+    reserved = min(getattr(args, "limit", 1) or 1, pacer.max_requests - 1) if args.with_description else 0
+    jobs: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for page in range(1, args.max_pages + 1):
+        if page > 1 and pacer.remaining() <= reserved:
+            break
+        url = EUROJOBS_BASE_URL + "/api/v1/jobs?" + urllib.parse.urlencode(dict(params, page=str(page)))
+        try:
+            payload = pacer.request(url)
+            if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+                raise RuntimeError("unexpected EuroJobs response format")
+            meta = payload.get("meta")
+            if meta is not None and not isinstance(meta, dict):
+                raise RuntimeError("unexpected EuroJobs meta format")
+        except Exception as error:
+            errors.append("page {}: {}".format(page, error))
+            break
+        page_jobs, skipped = parse_eurojobs_page(payload, args.with_description)
+        jobs.extend(page_jobs)
+        errors.extend("page {}: {}".format(page, message) for message in skipped)
+        total = (meta or {}).get("total")
+        if not payload["data"] or (isinstance(total, int) and not isinstance(total, bool) and page * 100 >= total):
+            break
+    return jobs, errors
+
+
+def enrich_eurojobs_descriptions(
+    jobs: list[dict[str, Any]], args: argparse.Namespace,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Fetch full text for EuroJobs results that will be returned, then re-apply language filters."""
+    pacer = eurojobs_pacer(args)
+    limit = getattr(args, "limit", None)
+    kept: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for job in jobs:
+        identifier = str(job.get("id") or "")
+        if (limit is not None and len(kept) >= limit) or job.get("source") != "eurojobs" \
+                or not re.fullmatch(r"[0-9]+", identifier):
+            kept.append(job)
+            continue
+        if not pacer.remaining():
+            errors.append("detail {}: request budget reached, kept the snippet".format(identifier))
+            kept.append(job)
+            continue
+        try:
+            detail = pacer.request(EUROJOBS_BASE_URL + "/api/v1/jobs/" + identifier)
+            data = detail.get("data") if isinstance(detail, dict) else None
+            raw_description = data.get("description_html") if isinstance(data, dict) else None
+            if isinstance(raw_description, str) and raw_description.strip():
+                analysis = analyze(raw_description)
+                job["description"] = plain(raw_description)[:4000]
+                job["integrity"] = merge_integrity(job.get("integrity"), analysis.get("integrity"))
+                job["ad_language"] = analysis["ad_language"]
+                job["german_required"] = analysis["german_required"]
+        except Exception as error:
+            errors.append("detail {}: {}".format(identifier, error))
+        if not fails_language_filters(job, args):
+            kept.append(job)
+    return kept, errors
+
+
 def fetch_ats(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list[str]]:
     companies = json.loads(Path(args.companies).read_text(encoding="utf-8"))
     errors: list[str] = []
@@ -963,6 +1190,7 @@ SOURCE_FETCHERS = {
     "ats": fetch_ats,
     "linkedin": fetch_linkedin,
     "freehire": fetch_freehire,
+    "eurojobs": fetch_eurojobs,
 }
 SOURCE_FETCHERS = {
     source: fetcher for source, fetcher in SOURCE_FETCHERS.items()
@@ -994,7 +1222,7 @@ def source_status_line(source: str, status: dict[str, Any]) -> str:
     if errors:
         if source == "ats":
             error_label = "company error" if len(errors) == 1 else "company errors"
-        elif source == "freehire":
+        elif source in {"freehire", "eurojobs"}:
             error_label = "query error" if len(errors) == 1 else "query errors"
         else:
             error_label = "partial error" if len(errors) == 1 else "partial errors"
@@ -1147,6 +1375,11 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
         job.pop("_tags", None)
     unique = deduplicate_jobs(all_jobs)
     unique = sorted(unique, key=lambda job: job.get("posted") or "", reverse=True)
+    if args.with_description and "eurojobs" in statuses:
+        before = len(unique)
+        unique, detail_errors = enrich_eurojobs_descriptions(unique, args)
+        statuses["eurojobs"]["count"] -= before - len(unique)
+        statuses["eurojobs"]["partial_errors"].extend(detail_errors)
     unique = mark_seen_jobs(unique, args.seen_file, args.only_new, args.limit)
     meta = {
         "query": {
@@ -1173,7 +1406,7 @@ def main() -> int:
     parser.add_argument("--where", default=None, help="City or region")
     parser.add_argument("--radius", type=int, default=25, help="BA search radius in km (default: 25)")
     parser.add_argument("--days", type=int, default=7, help="Posting age window in days (default: 7)")
-    source_choices = ",".join(DEFAULT_SOURCES + ("freehire",))
+    source_choices = ",".join(DEFAULT_SOURCES + ("freehire", "eurojobs"))
     parser.add_argument(
         "--sources",
         default=",".join(DEFAULT_SOURCES),
@@ -1195,7 +1428,7 @@ def main() -> int:
                         help="Keep jobs whose title matches the normalized query phrase")
     parser.add_argument("--limit", type=int, default=100, help="Maximum number of output jobs (default: 100)")
     parser.add_argument("--max-pages", type=int, default=3,
-                        help="Maximum pages for BA, Arbeitnow, and Freehire (default: 3)")
+                        help="Maximum pages for BA, Arbeitnow, Freehire, and EuroJobs (default: 3)")
     if "linkedin" not in DISABLED_SOURCES:
         parser.add_argument("--linkedin-pages", type=int, default=1,
                             help="LinkedIn pages per query, capped at 5 (default: 1)")

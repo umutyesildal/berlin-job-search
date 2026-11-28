@@ -29,11 +29,13 @@ from search import (
     filter_jobs,
     freehire_salary,
     is_daily_berlin_jobs_location,
+    fetch_eurojobs,
     fetch_freehire,
     parse_arbeitnow,
     parse_ashby,
     parse_ba,
     parse_dailyberlinjobs,
+    parse_eurojobs,
     parse_freehire,
     parse_greenhouse,
     parse_lever,
@@ -508,6 +510,222 @@ class CitySearchTests(unittest.TestCase):
 
         self.assertEqual(requests[0], requests[1])
         self.assertEqual(requests[0]["wo"], ["München"])
+
+    def test_eurojobs_is_opt_in(self):
+        self.assertNotIn("eurojobs", DEFAULT_SOURCES)
+        self.assertIn("eurojobs", SOURCE_FETCHERS)
+
+    def test_eurojobs_fixture_links_to_job_page_not_apply_redirect(self):
+        jobs = parse_eurojobs(fixture_json("eurojobs.json"))
+        self.assertEqual(len(jobs), 2)
+        hybrid, remote = jobs
+        self.assertEqual(hybrid["source"], "eurojobs")
+        self.assertEqual(hybrid["id"], "900001")
+        self.assertEqual(hybrid["company"], "Example Labs GmbH")
+        self.assertEqual(hybrid["location"], "Berlin, Germany")
+        self.assertTrue(hybrid["url"].startswith("https://eurojobs.ai/jobs/companies/"))
+        self.assertNotIn("/apply/", hybrid["url"])
+        self.assertIs(hybrid["remote"], False)
+        self.assertEqual(hybrid["work_mode"], "hybrid")
+        self.assertEqual(hybrid["posted"], "2026-11-20")
+        self.assertEqual(hybrid["employment_type"], "full-time")
+        self.assertEqual(hybrid["salary"], "EUR 70000–90000/year")
+        self.assertEqual(hybrid["skills"], ["python", "postgresql", "aws"])
+        self.assertIs(hybrid["visa_sponsorship"], True)
+        self.assertNotIn("description", hybrid)
+        self.assertIs(remote["remote"], True)
+        self.assertEqual(remote["posted"], "2026-11-18")
+        self.assertIsNone(remote["salary"])
+        self.assertEqual(remote["german_required"], "required")
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_request_params_and_pagination(self, _sleep):
+        payload = fixture_json("eurojobs.json")
+        payload["meta"]["total"] = 150
+        args = Namespace(
+            what="backend engineer", where="M\u00fcnchen", days=7, max_pages=3,
+            with_description=False, remote=True,
+        )
+        with patch.object(search, "request_json", side_effect=[payload, payload]) as request:
+            jobs, errors = fetch_eurojobs(args)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(jobs), 4)
+        self.assertEqual(request.call_count, 2)
+        first = urlsplit(request.call_args_list[0].args[0])
+        self.assertEqual(first.netloc, "eurojobs.ai")
+        self.assertEqual(first.path, "/api/v1/jobs")
+        query = parse_qs(first.query)
+        self.assertEqual(query["q"], ["backend engineer"])
+        self.assertEqual(query["country"], ["DE"])
+        self.assertEqual(query["location"], ["munich"])
+        self.assertEqual(query["since"], ["7d"])
+        self.assertEqual(query["remote"], ["true"])
+        self.assertEqual(query["per_page"], ["100"])
+        self.assertEqual(query["page"], ["1"])
+        self.assertEqual(parse_qs(urlsplit(request.call_args_list[1].args[0]).query)["page"], ["2"])
+
+    def test_eurojobs_country_wide_search_omits_location_and_long_windows(self):
+        args = Namespace(
+            what="data engineer", where="Germany", days=90, max_pages=1,
+            with_description=False, remote=False,
+        )
+        with patch.object(search, "request_json", return_value={"data": [], "meta": {"total": 0}}) as request:
+            jobs, errors = fetch_eurojobs(args)
+        self.assertEqual((jobs, errors), ([], []))
+        query = parse_qs(urlsplit(request.call_args.args[0]).query)
+        self.assertNotIn("location", query)
+        self.assertNotIn("since", query)
+        self.assertNotIn("remote", query)
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_retains_first_page_when_later_page_fails(self, _sleep):
+        payload = fixture_json("eurojobs.json")
+        payload["meta"]["total"] = 500
+        args = Namespace(
+            what="engineer", where="Berlin", days=7, max_pages=2,
+            with_description=False, remote=False,
+        )
+        with patch.object(search, "request_json", side_effect=[payload, RuntimeError("read timed out")]):
+            jobs, errors = fetch_eurojobs(args)
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(errors, ["page 2: read timed out"])
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_keeps_first_page_when_second_page_is_malformed(self, _sleep):
+        first = fixture_json("eurojobs.json")
+        first["meta"]["total"] = 500
+        bad_items = fixture_json("eurojobs.json")
+        for item in bad_items["data"]:
+            item["skills"] = 7
+        bad_meta = fixture_json("eurojobs.json")
+        bad_meta["meta"] = [1, 2]
+        for second in (bad_items, bad_meta):
+            args = Namespace(
+                what="engineer", where="Berlin", days=7, max_pages=3,
+                with_description=False, remote=False,
+            )
+            with patch.object(search, "request_json", side_effect=[first, second, first]):
+                jobs, errors = fetch_eurojobs(args)
+            self.assertEqual(len(jobs), 2)
+            self.assertEqual([job["id"] for job in jobs], ["900001", "900002"])
+            self.assertTrue(errors)
+            self.assertTrue(all(error.startswith("page 2:") for error in errors))
+
+    def test_eurojobs_skips_foreign_and_malformed_urls(self):
+        payload = fixture_json("eurojobs.json")
+        valid = payload["data"][0]
+        payload["data"] = [
+            valid,
+            dict(valid, id=1, url="https://evil.example/jobs/companies/x/y"),
+            dict(valid, id=2, url="http://eurojobs.ai/jobs/companies/x/y"),
+            dict(valid, id=3, url="https://[::1/jobs"),
+            dict(valid, id=4, url="https://eurojobs.ai.evil.example/jobs/x"),
+            dict(valid, id=5, url="https://user@eurojobs.ai/jobs/x"),
+            dict(valid, id=6, url="https://eurojobs.ai/apply/123"),
+            dict(valid, id=7, url=None),
+            dict(valid, id=8, url="https://www.eurojobs.ai/jobs/companies/x/y"),
+        ]
+        args = Namespace(
+            what="engineer", where="Berlin", days=7, max_pages=1,
+            with_description=False, remote=False,
+        )
+        with patch.object(search, "request_json", return_value=payload):
+            jobs, errors = fetch_eurojobs(args)
+        self.assertEqual([job["id"] for job in jobs], ["900001"])
+        self.assertEqual(len(errors), 8)
+        self.assertTrue(all("skipped item" in error for error in errors))
+
+    def eurojobs_search(self, payload, details, **params):
+        values = {"what": "engineer", "where": "Berlin", "days": 30, "sources": "eurojobs", "limit": 5}
+        values.update(params)
+        with patch.object(search.time, "sleep"), \
+                patch.object(search, "request_json", side_effect=[payload] + details) as request:
+            return search.run_search(values), request
+
+    def test_eurojobs_rejects_bare_and_dot_segment_urls_end_to_end(self):
+        payload = fixture_json("eurojobs.json")
+        valid = payload["data"][0]
+        payload["data"] = [
+            valid,
+            dict(valid, id=11, url="https://eurojobs.ai/jobs/"),
+            dict(valid, id=12, url="https://eurojobs.ai/jobs/../apply/123"),
+            dict(valid, id=13, url="https://eurojobs.ai/jobs/companies/./x"),
+            dict(valid, id=14, url="https://eurojobs.ai/jobs/%2e%2e/apply/1"),
+        ]
+        result, _ = self.eurojobs_search(payload, [])
+        self.assertEqual([job["id"] for job in result["jobs"]], ["900001"])
+        status = result["meta"]["sources"]["eurojobs"]
+        self.assertTrue(status["ok"])
+        self.assertEqual(len(status["partial_errors"]), 4)
+        for identifier in (11, 12, 13, 14):
+            self.assertTrue(any("skipped item {}:".format(identifier) in error for error in status["partial_errors"]))
+
+    def german_description_case(self, flag):
+        payload = fixture_json("eurojobs.json")
+        item = dict(payload["data"][0], description_snippet="English team. No German required.")
+        payload["data"] = [item]
+        detail = {"data": {"description_html": "<p>Sehr gute Deutschkenntnisse sind erforderlich.</p>"}}
+        params = {"with_description": True, flag: True}
+        no_description, _ = self.eurojobs_search(payload, [], **dict(params, with_description=False))
+        self.assertEqual(len(no_description["jobs"]), 1, "snippet alone should pass the filter")
+        result, request = self.eurojobs_search(payload, [detail], **params)
+        self.assertEqual(request.call_count, 2)
+        self.assertEqual(result["jobs"], [])
+        self.assertEqual(result["meta"]["sources"]["eurojobs"]["count"], 0)
+
+    def test_eurojobs_english_only_reapplied_after_description(self):
+        self.german_description_case("english_only")
+
+    def test_eurojobs_no_german_required_reapplied_after_description(self):
+        self.german_description_case("no_german_required")
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_requests_share_one_paced_budget(self, sleep):
+        payload = fixture_json("eurojobs.json")
+        payload["meta"]["total"] = 10_000
+        args = Namespace(
+            what="engineer", where="Berlin", days=7, max_pages=50,
+            with_description=True, remote=False, limit=100,
+        )
+        with patch.object(search, "request_json", return_value=payload) as request:
+            jobs, _ = fetch_eurojobs(args)
+            _, detail_errors = search.enrich_eurojobs_descriptions(jobs * 10, args)
+        self.assertEqual(request.call_count, search.EUROJOBS_MAX_REQUESTS)
+        self.assertEqual(sleep.call_count, search.EUROJOBS_MAX_REQUESTS - 1)
+        self.assertTrue(any("request budget reached" in error for error in detail_errors))
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_with_description_fetches_only_returned_results(self, _sleep):
+        payload = fixture_json("eurojobs.json")
+        payload["data"] = payload["data"] * 5
+        for index, item in enumerate(payload["data"]):
+            item["id"] = 900100 + index
+        payload["meta"]["total"] = 10
+        detail = {"data": {"description_html": "<p>We build fictional APIs. English is our working language.</p>"}}
+        params = {
+            "what": "engineer", "where": "Berlin", "days": 30, "sources": "eurojobs",
+            "limit": 1, "with_description": True,
+        }
+        with patch.object(search, "request_json", side_effect=[payload, detail]) as request:
+            result = search.run_search(params)
+        self.assertEqual(request.call_count, 2)
+        self.assertEqual(len(result["jobs"]), 1)
+        job = result["jobs"][0]
+        self.assertEqual(urlsplit(request.call_args_list[1].args[0]).path, "/api/v1/jobs/" + job["id"])
+        self.assertEqual(job["description"], "We build fictional APIs. English is our working language.")
+
+    @patch.object(search.time, "sleep")
+    def test_eurojobs_description_errors_are_reported(self, _sleep):
+        jobs = parse_eurojobs(fixture_json("eurojobs.json"), include_description=True)
+        detail = {"data": {"id": "900001", "description_html": "<p>We build fictional APIs. English is our working language.</p>"}}
+        args = Namespace(with_description=True)
+        with patch.object(search, "request_json", side_effect=[detail, RuntimeError("HTTP 404")]) as request:
+            kept, errors = search.enrich_eurojobs_descriptions(jobs, args)
+        self.assertEqual(len(kept), 2)
+        self.assertEqual(urlsplit(request.call_args_list[0].args[0]).path, "/api/v1/jobs/900001")
+        self.assertEqual(jobs[0]["description"], "We build fictional APIs. English is our working language.")
+        self.assertIn("Deutschkenntnisse", jobs[1]["description"])
+        self.assertEqual(errors, ["detail 900002: HTTP 404"])
 
     def test_freehire_uses_canonical_english_city_aliases(self):
         urls = []

@@ -128,6 +128,7 @@ Andere Agenten nutzen denselben Skill im normalen Chat. Beispiele für Prompts:
 | Unternehmens-Karriereseiten | Berlin, Hamburg, München, Frankfurt und Köln, auch für Nicht-Tech-Stellen; Greenhouse, Lever, Ashby, Personio, SmartRecruiters, Recruitee und Workable |
 | StepStone, Indeed, XING, hiring.cafe | Fertige Suchlinks und Browser-Anleitungen |
 | freehire.me | Optionale Quelle für Tech-Stellen |
+| [EuroJobs.ai](https://eurojobs.ai/docs/api) | Optionale Quelle für Tech-Stellen: IT-Jobs in Deutschland und Europa direkt aus den Karriereseiten der Arbeitgeber (öffentliche API ohne Schlüssel; Treffer verlinken auf eurojobs.ai) |
 
 ## Datenschutz und Sicherheit
 
@@ -154,6 +155,7 @@ beworbene oder abgelehnte Stellen aus der lokalen Bewerbungsübersicht ausblende
 | `boards-api.greenhouse.io`, `api.lever.co`, `api.ashbyhq.com`, `*.jobs.personio.de`, `api.smartrecruiters.com`, `*.recruitee.com`, `apply.workable.com`, `join.com` | Unternehmens-Jobbörsen aus `assets/companies.json` |
 | `www.linkedin.com` | Jobsuche als ausgeloggter Gast (lokale CLI, geringe Abfragefrequenz) |
 | `freehire.me` | Nur mit `--sources freehire` |
+| `eurojobs.ai` | Nur mit `--sources eurojobs` |
 | Jede Job-URL, die du an `job_detail.py` übergibst | Ruft die öffentliche Seite ab |
 | Lokales Chrome/Chromium/Edge, `pypdf`/`pdftotext` | PDF-Erstellung und Textextraktion, falls installiert |
 

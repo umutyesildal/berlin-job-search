@@ -103,7 +103,7 @@ These facts change everything:
    *Warehouse worker* → *Lagermitarbeiter*. Add *Werkstudent* for students and *Ausbildung* for
    apprenticeships.
 <!-- linkedin-guest:start id=skill-search-sources -->
-2. **Pick sources for the field.** `dailyberlinjobs` and `freehire` focus on **tech,
+2. **Pick sources for the field.** `dailyberlinjobs`, `freehire` and `eurojobs` focus on **tech,
    engineering and data roles**. Employer boards (`ats`) can list roles in any field;
    use them alongside general sources and keep only relevant jobs.
 
