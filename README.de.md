@@ -20,6 +20,8 @@ Bei der Jobsuche in Deutschland gelten Regeln, die nirgends aufgeschrieben sind:
 Dieser Skill gibt deinem KI-Agenten dieses Wissen sowie Live-Jobdaten und Tools, die ihm die
 Routinearbeit abnehmen. Er ist kostenlos und Open Source und benötigt keine API-Schlüssel.
 
+**Schwester-Skill:** Du ziehst nach Berlin? Schau dir auch [Berlin Apartment Search](https://github.com/umutyesildal/berlin-apartment-search) an — Betrugs- und Mietprüfungen für Berliner Wohnungen.
+
 ## Schnellstart
 
 **Claude Code**

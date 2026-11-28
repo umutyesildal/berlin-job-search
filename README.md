@@ -20,6 +20,8 @@ Job hunting in Germany has rules nobody writes down:
 This skill gives your AI agent that knowledge, plus live job data and tools that do the
 boring parts. It is free and open source, and needs no API keys.
 
+**Sister skill:** Moving to Berlin? Also see [Berlin Apartment Search](https://github.com/umutyesildal/berlin-apartment-search) — scam and rent checks for Berlin flats.
+
 ## Quick start
 
 **Claude Code**
