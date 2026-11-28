@@ -491,6 +491,12 @@ def mark_seen_jobs(
     return [job for job, _, _ in selected]
 
 
+def fails_language_filters(job: dict[str, Any], args: argparse.Namespace) -> bool:
+    if getattr(args, "english_only", False) and job.get("german_required") == "required":
+        return True
+    return bool(getattr(args, "no_german_required", False) and job.get("german_required") != "not_required")
+
+
 def filter_jobs(jobs: list[dict[str, Any]], args: argparse.Namespace) -> list[dict[str, Any]]:
     cutoff = dt.date.today() - dt.timedelta(days=args.days) if args.days else None
     query_words = [word.casefold() for word in re.findall(r"\w+", args.what)]
@@ -499,9 +505,7 @@ def filter_jobs(jobs: list[dict[str, Any]], args: argparse.Namespace) -> list[di
     for job in jobs:
         if args.remote and job.get("remote") is not True:
             continue
-        if args.english_only and job.get("german_required") == "required":
-            continue
-        if getattr(args, "no_german_required", False) and job.get("german_required") != "not_required":
+        if fails_language_filters(job, args):
             continue
         if getattr(args, "salary_disclosed", False) and not job.get("salary"):
             continue
@@ -817,7 +821,7 @@ def fetch_freehire(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list
 
 EUROJOBS_SINCE_WINDOWS = ((1, "24h"), (3, "3d"), (7, "7d"), (30, "30d"))
 EUROJOBS_BASE_URL = "https://eurojobs.ai"
-EUROJOBS_HOSTS = {"eurojobs.ai", "www.eurojobs.ai"}
+EUROJOBS_HOST = "eurojobs.ai"
 # The API docs ask clients to keep to a few requests a minute; list and detail calls share one budget.
 EUROJOBS_MIN_INTERVAL = 12.0
 EUROJOBS_MAX_REQUESTS = 6
@@ -863,9 +867,12 @@ def eurojobs_listing_url(value: Any) -> Optional[str]:
     except ValueError:
         return None
     host = (parsed.hostname or "").casefold()
-    if parsed.scheme != "https" or host not in EUROJOBS_HOSTS or parsed.port not in {None, 443}:
+    if parsed.scheme != "https" or host != EUROJOBS_HOST or parsed.port not in {None, 443}:
         return None
-    if not parsed.path.startswith("/jobs/"):
+    segments = parsed.path.split("/")
+    if len(segments) < 3 or segments[:2] != ["", "jobs"] or not segments[2]:
+        return None
+    if any(urllib.parse.unquote(segment) in {".", ".."} for segment in segments):
         return None
     return value.strip()
 
@@ -997,16 +1004,23 @@ def fetch_eurojobs(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list
     return jobs, errors
 
 
-def enrich_eurojobs_descriptions(jobs: list[dict[str, Any]], args: argparse.Namespace) -> list[str]:
-    """Fetch full descriptions only for EuroJobs results that will be returned."""
+def enrich_eurojobs_descriptions(
+    jobs: list[dict[str, Any]], args: argparse.Namespace,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Fetch full text for EuroJobs results that will be returned, then re-apply language filters."""
     pacer = eurojobs_pacer(args)
+    limit = getattr(args, "limit", None)
+    kept: list[dict[str, Any]] = []
     errors: list[str] = []
     for job in jobs:
         identifier = str(job.get("id") or "")
-        if job.get("source") != "eurojobs" or not re.fullmatch(r"[0-9]+", identifier):
+        if (limit is not None and len(kept) >= limit) or job.get("source") != "eurojobs" \
+                or not re.fullmatch(r"[0-9]+", identifier):
+            kept.append(job)
             continue
         if not pacer.remaining():
             errors.append("detail {}: request budget reached, kept the snippet".format(identifier))
+            kept.append(job)
             continue
         try:
             detail = pacer.request(EUROJOBS_BASE_URL + "/api/v1/jobs/" + identifier)
@@ -1020,7 +1034,9 @@ def enrich_eurojobs_descriptions(jobs: list[dict[str, Any]], args: argparse.Name
                 job["german_required"] = analysis["german_required"]
         except Exception as error:
             errors.append("detail {}: {}".format(identifier, error))
-    return errors
+        if not fails_language_filters(job, args):
+            kept.append(job)
+    return kept, errors
 
 
 def fetch_ats(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list[str]]:
@@ -1359,11 +1375,12 @@ def run_search(params: dict[str, Any]) -> dict[str, Any]:
         job.pop("_tags", None)
     unique = deduplicate_jobs(all_jobs)
     unique = sorted(unique, key=lambda job: job.get("posted") or "", reverse=True)
-    unique = mark_seen_jobs(unique, args.seen_file, args.only_new, args.limit)
     if args.with_description and "eurojobs" in statuses:
-        detail_errors = enrich_eurojobs_descriptions(unique, args)
-        if detail_errors:
-            statuses["eurojobs"]["partial_errors"].extend(detail_errors)
+        before = len(unique)
+        unique, detail_errors = enrich_eurojobs_descriptions(unique, args)
+        statuses["eurojobs"]["count"] -= before - len(unique)
+        statuses["eurojobs"]["partial_errors"].extend(detail_errors)
+    unique = mark_seen_jobs(unique, args.seen_file, args.only_new, args.limit)
     meta = {
         "query": {
             "what": args.what, "where": args.where, "radius": args.radius, "days": args.days,
